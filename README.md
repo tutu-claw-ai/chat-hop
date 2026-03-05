@@ -41,6 +41,7 @@
 | Kimi | ✅ 已支持 | [kimi.com](https://www.kimi.com/chat/) |
 | DeepSeek | ✅ 已支持 | [chat.deepseek.com](https://chat.deepseek.com/) |
 | 文心一言 | ✅ 已支持 | [yiyan.baidu.com](https://yiyan.baidu.com/chat/) |
+| MiniMax | ✅ 已支持 | [agent.minimaxi.com](https://agent.minimaxi.com/chat) |
 
 ## 📦 安装
 

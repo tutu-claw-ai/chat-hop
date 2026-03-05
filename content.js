@@ -83,6 +83,17 @@
         bubble: '[class*="questionText"], [class*="answerBox"]',
       },
     },
+    // MiniMax
+    minimax: {
+      name: 'MiniMax',
+      hostPattern: /agent\.minimaxi\.com/,
+      selectors: {
+        container: '.messages-container',
+        userMessage: '.message.sent',
+        aiMessage: '.message.received',
+        bubble: '.message-content',
+      },
+    },
   };
 
   // 状态
