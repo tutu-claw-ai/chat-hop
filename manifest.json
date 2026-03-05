@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "ChatHop - 聊天兔子",
-  "version": "2.0.0",
-  "description": "🐰 为 AI 对话网页提供侧边栏时间线导航，快速跳转到长对话中的任何消息。支持千问、元宝等主流 AI 平台。",
+  "version": "2.2.1",
+  "description": "🐰 为 AI 对话网页提供侧边栏时间线导航，快速跳转到长对话中的任何消息。支持千问、元宝、豆包、Kimi 等主流 AI 平台。",
   "permissions": [
     "activeTab",
     "storage"
@@ -12,9 +12,12 @@
     "https://qianwen.com/*",
     "https://tongyi.aliyun.com/*",
     "https://yuanbao.tencent.com/*",
-    "https://chat.deepseek.com/*",
+    "https://www.doubao.com/*",
+    "https://doubao.com/*",
+    "https://www.kimi.com/*",
+    "https://kimi.com/*",
     "https://kimi.moonshot.cn/*",
-    "https://chat.doubao.com/*",
+    "https://chat.deepseek.com/*",
     "https://yiyan.baidu.com/*"
   ],
   "content_scripts": [
@@ -38,7 +41,8 @@
     },
     {
       "matches": [
-        "https://chat.deepseek.com/*"
+        "https://www.doubao.com/*",
+        "https://doubao.com/*"
       ],
       "js": ["content.js"],
       "css": ["styles.css"],
@@ -46,6 +50,8 @@
     },
     {
       "matches": [
+        "https://www.kimi.com/*",
+        "https://kimi.com/*",
         "https://kimi.moonshot.cn/*"
       ],
       "js": ["content.js"],
@@ -54,7 +60,7 @@
     },
     {
       "matches": [
-        "https://chat.doubao.com/*"
+        "https://chat.deepseek.com/*"
       ],
       "js": ["content.js"],
       "css": ["styles.css"],

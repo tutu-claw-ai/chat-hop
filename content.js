@@ -36,6 +36,30 @@
         bubble: '[class*="agent-chat__bubble"]',
       },
     },
+    // 豆包
+    doubao: {
+      name: '豆包',
+      hostPattern: /doubao\.com/,
+      selectors: {
+        container: '[class*="message-list-"]',
+        userMessage: '[class*="message-block-container"]',
+        aiMessage: '[class*="message-block-container"]',
+        bubble: '[class*="container-PvPoAn"]',
+        // 豆包需要特殊处理：AI消息包含 flow-markdown-body
+        aiIndicator: '[class*="flow-markdown-body"]',
+      },
+    },
+    // Kimi
+    kimi: {
+      name: 'Kimi',
+      hostPattern: /kimi\.com|moonshot\.cn/,
+      selectors: {
+        container: '[class*="chat-content-list"]',
+        userMessage: '[class*="chat-content-item-user"]',
+        aiMessage: '[class*="chat-content-item-assistant"]',
+        bubble: '[class*="user-content"], [class*="markdown-container"]',
+      },
+    },
     // DeepSeek（待确认）
     deepseek: {
       name: 'DeepSeek',
@@ -47,28 +71,7 @@
         bubble: '[class*="message"], [class*="bubble"]',
       },
     },
-    // Kimi（待确认）
-    kimi: {
-      name: 'Kimi',
-      hostPattern: /kimi\.moonshot\.cn/,
-      selectors: {
-        container: '[class*="chat"]',
-        userMessage: '[class*="user"], [class*="human"]',
-        aiMessage: '[class*="assistant"], [class*="bot"]',
-        bubble: '[class*="message"], [class*="bubble"]',
-      },
-    },
-    // 豆包（待确认）
-    doubao: {
-      name: '豆包',
-      hostPattern: /chat\.doubao\.com/,
-      selectors: {
-        container: '[class*="chat"]',
-        userMessage: '[class*="user"], [class*="human"]',
-        aiMessage: '[class*="assistant"], [class*="bot"]',
-        bubble: '[class*="message"], [class*="bubble"]',
-      },
-    },
+
     // 文心一言（待确认）
     yiyan: {
       name: '文心一言',
@@ -312,11 +315,17 @@
     
     if (!text || text.length < 2) return null;
     
+    // 豆包特殊处理：通过 aiIndicator 判断是否为 AI 消息
+    if (currentPlatform.key === 'doubao' && selectors.aiIndicator) {
+      const hasAiContent = element.querySelector(selectors.aiIndicator);
+      role = hasAiContent ? 'assistant' : 'user';
+    }
+    
     // 提取摘要
     const summary = text.substring(0, CONFIG.maxSummaryLength) + (text.length > CONFIG.maxSummaryLength ? '...' : '');
     
     // 生成唯一ID
-    const id = `ai-msg-${role}-${index}-${Date.now()}`;
+    const id = `chat-msg-${role}-${index}-${Date.now()}`;
     
     return {
       id,

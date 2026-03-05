@@ -37,9 +37,9 @@
 |------|------|------|
 | 千问 | ✅ 已支持 | [qianwen.com](https://www.qianwen.com/chat/) |
 | 元宝 | ✅ 已支持 | [yuanbao.tencent.com](https://yuanbao.tencent.com/chat/) |
+| 豆包 | ✅ 已支持 | [doubao.com](https://www.doubao.com/chat/) |
+| Kimi | ✅ 已支持 | [kimi.com](https://www.kimi.com/chat/) |
 | DeepSeek | 🔜 待适配 | [chat.deepseek.com](https://chat.deepseek.com/) |
-| Kimi | 🔜 待适配 | [kimi.moonshot.cn](https://kimi.moonshot.cn/) |
-| 豆包 | 🔜 待适配 | [chat.doubao.com](https://chat.doubao.com/) |
 | 文心一言 | 🔜 待适配 | [yiyan.baidu.com](https://yiyan.baidu.com/) |
 
 ## 📦 安装
@@ -119,8 +119,8 @@ newPlatform: {
 ## 📝 开发计划
 
 - [ ] 支持 DeepSeek
-- [ ] 支持 Kimi
-- [ ] 支持豆包
+- [x] 支持 Kimi
+- [x] 支持豆包
 - [ ] 支持文心一言
 - [ ] 添加搜索功能
 - [ ] 支持导出对话
