@@ -60,15 +60,15 @@
         bubble: '[class*="user-content"], [class*="markdown-container"]',
       },
     },
-    // DeepSeek（待确认）
+    // DeepSeek
     deepseek: {
       name: 'DeepSeek',
       hostPattern: /chat\.deepseek\.com/,
       selectors: {
-        container: '[class*="chat"]',
-        userMessage: '[class*="user"], [class*="human"]',
-        aiMessage: '[class*="assistant"], [class*="bot"]',
-        bubble: '[class*="message"], [class*="bubble"]',
+        container: 'body',
+        userMessage: '.ds-message.d29f3d7d',
+        aiMessage: '.ds-message:not(.d29f3d7d)',
+        bubble: '.ds-message',
       },
     },
 

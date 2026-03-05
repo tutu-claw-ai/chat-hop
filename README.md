@@ -39,7 +39,7 @@
 | 元宝 | ✅ 已支持 | [yuanbao.tencent.com](https://yuanbao.tencent.com/chat/) |
 | 豆包 | ✅ 已支持 | [doubao.com](https://www.doubao.com/chat/) |
 | Kimi | ✅ 已支持 | [kimi.com](https://www.kimi.com/chat/) |
-| DeepSeek | 🔜 待适配 | [chat.deepseek.com](https://chat.deepseek.com/) |
+| DeepSeek | ✅ 已支持 | [chat.deepseek.com](https://chat.deepseek.com/) |
 | 文心一言 | 🔜 待适配 | [yiyan.baidu.com](https://yiyan.baidu.com/) |
 
 ## 📦 安装
@@ -118,7 +118,7 @@ newPlatform: {
 
 ## 📝 开发计划
 
-- [ ] 支持 DeepSeek
+- [x] 支持 DeepSeek
 - [x] 支持 Kimi
 - [x] 支持豆包
 - [ ] 支持文心一言
