@@ -72,15 +72,15 @@
       },
     },
 
-    // 文心一言（待确认）
+    // 文心一言
     yiyan: {
       name: '文心一言',
       hostPattern: /yiyan\.baidu\.com/,
       selectors: {
-        container: '[class*="chat"]',
-        userMessage: '[class*="user"], [class*="human"]',
-        aiMessage: '[class*="assistant"], [class*="bot"]',
-        bubble: '[class*="message"], [class*="bubble"]',
+        container: '[class*="chatViewer"]',
+        userMessage: '[class*="questionBox"]',
+        aiMessage: '[class*="answerBox"]',
+        bubble: '[class*="questionText"], [class*="answerBox"]',
       },
     },
   };
