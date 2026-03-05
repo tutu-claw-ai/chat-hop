@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Chat Timeline</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 320px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    .header h1 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .header p {
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .content {
+      padding: 16px;
+    }
+    
+    .feature {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 12px;
+      padding: 12px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    
+    .feature-icon {
+      font-size: 24px;
+      margin-right: 12px;
+      flex-shrink: 0;
+    }
+    
+    .feature-text h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: #333;
+    }
+    
+    .feature-text p {
+      font-size: 12px;
+      color: #666;
+      line-height: 1.4;
+    }
+    
+    .platforms {
+      background: white;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 16px;
+    }
+    
+    .platforms h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #333;
+    }
+    
+    .platform-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    
+    .platform-tag {
+      background: #e3f2fd;
+      color: #1976d2;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+    }
+    
+    .platform-tag.supported {
+      background: #e8f5e9;
+      color: #388e3c;
+    }
+    
+    .platform-tag.pending {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    
+    .footer {
+      padding: 12px 16px;
+      text-align: center;
+      border-top: 1px solid #e0e0e0;
+      background: white;
+    }
+    
+    .footer a {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 12px;
+    }
+    
+    .footer a:hover {
+      text-decoration: underline;
+    }
+    
+    .version {
+      font-size: 11px;
+      color: #999;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🐰 ChatHop</h1>
+    <p>聊天兔子 · 对话时间线导航</p>
+  </div>
+  
+  <div class="content">
+    <div class="feature">
+      <div class="feature-icon">🗺️</div>
+      <div class="feature-text">
+        <h3>对话导航</h3>
+        <p>侧边栏显示完整对话时间线，一目了然</p>
+      </div>
+    </div>
+    
+    <div class="feature">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-text">
+        <h3>快速跳转</h3>
+        <p>点击时间线项目，秒速定位到对应消息</p>
+      </div>
+    </div>
+    
+    <div class="feature">
+      <div class="feature-icon">🌐</div>
+      <div class="feature-text">
+        <h3>多平台支持</h3>
+        <p>支持千问、元宝等主流 AI 平台</p>
+      </div>
+    </div>
+    
+    <div class="platforms">
+      <h3>支持的平台</h3>
+      <div class="platform-list">
+        <span class="platform-tag supported">✓ 千问</span>
+        <span class="platform-tag supported">✓ 元宝</span>
+        <span class="platform-tag pending">DeepSeek</span>
+        <span class="platform-tag pending">Kimi</span>
+        <span class="platform-tag pending">豆包</span>
+        <span class="platform-tag pending">文心一言</span>
+      </div>
+    </div>
+  </div>
+  
+  <div class="footer">
+    <a href="https://github.com/tutu-claw-ai/ai-chat-timeline" target="_blank">GitHub</a>
+    <div class="version">v2.0.0</div>
+  </div>
+  
+  <script src="popup.js"></script>
+</body>
+</html>
