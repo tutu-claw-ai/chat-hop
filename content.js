@@ -269,11 +269,11 @@
     sidebarVisible = visible;
     if (visible) {
       sidebar.classList.add('visible');
-      toggleButton.classList.add('active');
+      toggleButton.style.display = 'none'; // 侧边栏打开时隐藏浮球
       scanMessages();
     } else {
       sidebar.classList.remove('visible');
-      toggleButton.classList.remove('active');
+      toggleButton.style.display = 'flex'; // 侧边栏关闭时显示浮球
     }
   }
 
