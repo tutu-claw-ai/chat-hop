@@ -2,6 +2,7 @@
 
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Coming%20Soon-blue)](https://chromewebstore.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/tutu-claw-ai/chat-hop)](https://github.com/tutu-claw-ai/chat-hop/releases)
 
 <p align="center">
   <img src="icons/icon128.png" alt="ChatHop Logo" width="128" height="128">
@@ -28,20 +29,25 @@
 - ⚡ **快速跳转** - 点击时间线项目，秒速定位到对应消息
 - 🎯 **智能摘要** - 自动提取消息摘要，快速了解内容
 - 🌙 **深色模式** - 自动适配系统深色模式
-- 🌐 **多平台支持** - 支持千问、元宝等主流 AI 平台
+- 🎨 **精美视觉** - 渐变配色，悬停动画，流畅体验
+- 🌐 **多平台支持** - 支持 11 个主流 AI 平台
 - 🔒 **隐私优先** - 所有数据本地处理，不上传任何信息
 
 ## 🌐 支持的平台
 
 | 平台 | 状态 | 网址 |
 |------|------|------|
-| 千问 | ✅ 已支持 | [qianwen.com](https://www.qianwen.com/chat/) |
-| 元宝 | ✅ 已支持 | [yuanbao.tencent.com](https://yuanbao.tencent.com/chat/) |
-| 豆包 | ✅ 已支持 | [doubao.com](https://www.doubao.com/chat/) |
+| 千问 (Qianwen) | ✅ 已支持 | [qianwen.com](https://www.qianwen.com/chat/) |
+| 元宝 (Yuanbao) | ✅ 已支持 | [yuanbao.tencent.com](https://yuanbao.tencent.com/chat/) |
+| 豆包 (Doubao) | ✅ 已支持 | [doubao.com](https://www.doubao.com/chat/) |
 | Kimi | ✅ 已支持 | [kimi.com](https://www.kimi.com/chat/) |
 | DeepSeek | ✅ 已支持 | [chat.deepseek.com](https://chat.deepseek.com/) |
-| 文心一言 | ✅ 已支持 | [yiyan.baidu.com](https://yiyan.baidu.com/chat/) |
+| 文心一言 (Yiyan) | ✅ 已支持 | [yiyan.baidu.com](https://yiyan.baidu.com/chat/) |
 | MiniMax | ✅ 已支持 | [agent.minimaxi.com](https://agent.minimaxi.com/chat) |
+| ChatGPT | ✅ 已支持 | [chatgpt.com](https://chatgpt.com/) |
+| Grok | ✅ 已支持 | [grok.com](https://grok.com/) |
+| Claude | ✅ 已支持 | [claude.ai](https://claude.ai/) |
+| Gemini | ⚠️ 未测试 | [gemini.google.com](https://gemini.google.com/) |
 
 ## 📦 安装
 
@@ -51,28 +57,32 @@
 
 ### 方式二：手动安装（开发者模式）
 
-1. 下载最新的 [Release](https://github.com/tutu-claw-ai/chat-hop/releases) 或克隆此仓库
-2. 打开 Chrome，访问 `chrome://extensions/`
-3. 开启右上角的「开发者模式」
-4. 点击「加载已解压的扩展程序」
-5. 选择扩展文件夹
+1. 从 [Releases](https://github.com/tutu-claw-ai/chat-hop/releases) 下载最新版本的 zip 文件
+2. 解压到任意文件夹
+3. 打开 Chrome，访问 `chrome://extensions/`
+4. 开启右上角的「开发者模式」
+5. 点击「加载已解压的扩展程序」
+6. 选择解压后的文件夹
 
 ## 📖 使用方法
 
-1. 打开支持的 AI 平台（如 [千问](https://www.qianwen.com/chat/) 或 [元宝](https://yuanbao.tencent.com/chat/)）
+1. 打开支持的 AI 平台（如 [ChatGPT](https://chatgpt.com/) 或 [Kimi](https://kimi.com/)）
 2. 开始与 AI 对话
-3. 点击页面右侧的紫色圆形按钮 🐰
+3. 点击页面右侧的 🐰 兔子按钮
 4. 在弹出的侧边栏中查看对话时间线
 5. 点击任意消息，页面自动滚动到对应位置
 
-## 🎨 截图
+## 🎨 视觉特性
 
-*即将添加*
+- **渐变配色** - 用户消息暖色调，AI 消息冷色调
+- **悬停动画** - 卡片浮起效果，流畅过渡
+- **激活高亮** - 当前消息发光边框
+- **深色模式** - 完美适配系统主题
 
 ## 🔧 技术栈
 
 - Vanilla JavaScript（无框架依赖）
-- CSS3（支持深色模式）
+- CSS3（渐变、动画、深色模式）
 - Chrome Extension Manifest V3
 
 ## 📁 项目结构
@@ -94,12 +104,6 @@ chat-hop/
 
 欢迎提交 Issue 和 Pull Request！
 
-1. Fork 本仓库
-2. 创建功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交更改 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 创建 Pull Request
-
 ### 添加新平台支持
 
 要添加新的 AI 平台支持，只需在 `content.js` 的 `PLATFORM_CONFIGS` 中添加配置：
@@ -117,16 +121,24 @@ newPlatform: {
 },
 ```
 
-## 📝 开发计划
+## 📝 更新日志
 
-- [x] 支持 DeepSeek
-- [x] 支持 Kimi
-- [x] 支持豆包
-- [x] 支持文心一言
-- [ ] 添加搜索功能
-- [ ] 支持导出对话
-- [ ] 添加快捷键支持
-- [ ] 多语言支持
+### v0.9.4
+- 🐰 更换简约风格兔子图标
+- 修复耳朵被切掉的问题
+
+### v0.9.2
+- 🎨 视觉升级：渐变配色、悬停动画、激活高亮
+- ✨ 立体感增强：阴影、浮起效果
+- 💫 微交互：点击涟漪、平滑过渡
+
+### v0.9.1
+- 🌐 新增 Gemini 支持
+- ✅ 支持 11 个 AI 平台
+
+### v0.9.0
+- 🎉 初始发布
+- 支持 10 个主流 AI 平台
 
 ## 📄 许可证
 
