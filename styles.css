@@ -219,13 +219,6 @@
   box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2), 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
-.ai-timeline-item.keyboard-selected {
-  background: #e8f0ff;
-  border-left-color: #2196f3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.3), 0 4px 12px rgba(33, 150, 243, 0.2);
-  outline: none;
-}
-
 /* 用户消息 - 暖色调 */
 .ai-timeline-item.user-message {
   border-left-color: #ff9800;

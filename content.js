@@ -149,7 +149,6 @@
   let toggleButton = null;
   let observer = null;
   let currentPlatform = null;
-  let selectedIndex = -1; // 当前选中的消息索引（键盘导航用）
 
   // 检测当前平台
   function detectPlatform() {
@@ -187,7 +186,6 @@
     createToggleButton();
     createSidebar();
     startObserving();
-    setupKeyboardShortcuts(); // 添加键盘快捷键支持
     
     // 初始扫描消息
     setTimeout(scanMessages, 1500);
@@ -276,80 +274,7 @@
     } else {
       sidebar.classList.remove('visible');
       toggleButton.style.display = 'flex'; // 侧边栏关闭时显示浮球
-      selectedIndex = -1; // 重置选中索引
     }
-  }
-
-  // 设置键盘快捷键
-  function setupKeyboardShortcuts() {
-    document.addEventListener('keydown', handleKeyboard);
-  }
-
-  // 处理键盘事件
-  function handleKeyboard(e) {
-    // Ctrl/Cmd + K: 切换侧边栏
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-      e.preventDefault();
-      toggleSidebar();
-      return;
-    }
-
-    // 如果侧边栏打开，处理导航快捷键
-    if (sidebarVisible && messages.length > 0) {
-      // Escape: 关闭侧边栏
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setSidebarVisible(false);
-        return;
-      }
-
-      // 上箭头: 向上选择
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        navigateTimeline(-1);
-        return;
-      }
-
-      // 下箭头: 向下选择
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        navigateTimeline(1);
-        return;
-      }
-
-      // Enter: 跳转到选中的消息
-      if (e.key === 'Enter' && selectedIndex >= 0) {
-        e.preventDefault();
-        scrollToMessage(selectedIndex);
-        return;
-      }
-    }
-  }
-
-  // 在时间线中导航
-  function navigateTimeline(direction) {
-    const items = sidebar.querySelectorAll('.ai-timeline-item');
-    if (items.length === 0) return;
-
-    // 计算新索引
-    if (selectedIndex < 0) {
-      selectedIndex = direction > 0 ? 0 : items.length - 1;
-    } else {
-      selectedIndex += direction;
-      // 循环导航
-      if (selectedIndex < 0) selectedIndex = items.length - 1;
-      if (selectedIndex >= items.length) selectedIndex = 0;
-    }
-
-    // 更新选中状态
-    items.forEach((item, i) => {
-      if (i === selectedIndex) {
-        item.classList.add('keyboard-selected');
-        item.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      } else {
-        item.classList.remove('keyboard-selected');
-      }
-    });
   }
 
   // 扫描消息
