@@ -343,7 +343,7 @@
   border-top: 1px solid #eee;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   flex-shrink: 0;
   background: #fafafa;
 }
@@ -357,34 +357,14 @@
 
 .ai-timeline-count {
   font-size: 12px;
-  color: #666;
-  font-weight: 500;
-}
-
-.ai-timeline-refresh {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 12px;
-  color: white;
-  transition: all 0.25s ease;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-}
-
-.ai-timeline-refresh:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-}
-
-.ai-timeline-refresh:active {
-  transform: translateY(0);
+  color: #888;
+  font-weight: 400;
+  text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {
   .ai-timeline-count {
-    color: #aaa;
+    color: #777;
   }
 }
 

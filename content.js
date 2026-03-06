@@ -243,17 +243,12 @@
         </div>
       </div>
       <div class="ai-timeline-footer">
-        <span class="ai-timeline-count">0 条消息</span>
-        <button class="ai-timeline-refresh" title="刷新">🔄</button>
+        <span class="ai-timeline-count">已显示 0 条 · 滚动页面加载更多</span>
       </div>
     `;
     
     sidebar.querySelector('.ai-timeline-close').addEventListener('click', () => {
       setSidebarVisible(false);
-    });
-    
-    sidebar.querySelector('.ai-timeline-refresh').addEventListener('click', () => {
-      scanMessages();
     });
     
     document.body.appendChild(sidebar);
@@ -437,13 +432,13 @@
     const content = sidebar.querySelector('.ai-timeline-content');
     const countSpan = sidebar.querySelector('.ai-timeline-count');
     
-    countSpan.textContent = `${messages.length} 条消息`;
+    countSpan.textContent = `已显示 ${messages.length} 条 · 滚动页面加载更多`;
     
     if (messages.length === 0) {
       content.innerHTML = `
         <div class="ai-timeline-empty">
           <p>📭 暂无消息</p>
-          <p class="ai-timeline-hint">开始对话后点击刷新</p>
+          <p class="ai-timeline-hint">开始对话后会自动显示</p>
         </div>
       `;
       return;
