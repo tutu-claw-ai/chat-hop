@@ -204,29 +204,16 @@
     toggleButton.id = 'ai-timeline-toggle';
     toggleButton.innerHTML = `
       <svg width="28" height="28" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- 兔子浮雕效果 - 阴影层 -->
-        <g opacity="0.3" transform="translate(1, 1)">
-          <ellipse cx="16" cy="20" rx="7" ry="6" fill="currentColor"/>
-          <ellipse cx="16" cy="14" rx="5" ry="5" fill="currentColor"/>
-          <ellipse cx="11" cy="5" rx="2.5" ry="6" fill="currentColor"/>
-          <ellipse cx="21" cy="5" rx="2.5" ry="6" fill="currentColor"/>
-        </g>
-        <!-- 兔子主体 -->
-        <ellipse cx="16" cy="20" rx="7" ry="6" fill="currentColor"/>
-        <ellipse cx="16" cy="14" rx="5" ry="5" fill="currentColor"/>
-        <!-- 耳朵 -->
-        <ellipse cx="11" cy="5" rx="2.5" ry="6" fill="currentColor"/>
-        <ellipse cx="21" cy="5" rx="2.5" ry="6" fill="currentColor"/>
-        <!-- 耳朵内部（浅色） -->
-        <ellipse cx="11" cy="5" rx="1.2" ry="4" fill="rgba(255,255,255,0.3)"/>
-        <ellipse cx="21" cy="5" rx="1.2" ry="4" fill="rgba(255,255,255,0.3)"/>
+        <!-- 简约风兔子 - 耳朵完整显示 -->
+        <ellipse cx="16" cy="23" rx="7" ry="6" fill="white"/>
+        <circle cx="16" cy="15" r="5.5" fill="white"/>
+        <ellipse cx="11" cy="6" rx="2.5" ry="6" fill="white"/>
+        <ellipse cx="21" cy="6" rx="2.5" ry="6" fill="white"/>
         <!-- 眼睛 -->
-        <circle cx="14" cy="13" r="1.2" fill="rgba(255,255,255,0.9)"/>
-        <circle cx="18" cy="13" r="1.2" fill="rgba(255,255,255,0.9)"/>
-        <circle cx="14" cy="13" r="0.6" fill="#333"/>
-        <circle cx="18" cy="13" r="0.6" fill="#333"/>
+        <circle cx="14" cy="14" r="1" fill="rgba(0,0,0,0.7)"/>
+        <circle cx="18" cy="14" r="1" fill="rgba(0,0,0,0.7)"/>
         <!-- 鼻子 -->
-        <ellipse cx="16" cy="16" rx="1" ry="0.7" fill="rgba(255,255,255,0.5)"/>
+        <ellipse cx="16" cy="17" rx="0.8" ry="0.5" fill="rgba(0,0,0,0.2)"/>
       </svg>
     `;
     toggleButton.title = '切换对话时间线';
