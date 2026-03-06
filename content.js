@@ -416,17 +416,16 @@
     
     // 提取摘要
     const summary = text.substring(0, CONFIG.maxSummaryLength) + (text.length > CONFIG.maxSummaryLength ? '...' : '');
-    
+
     // 生成唯一ID
     const id = `chat-msg-${role}-${index}-${Date.now()}`;
-    
+
     return {
       id,
       element,
       role,
       content: summary,
       fullContent: text,
-      timestamp: new Date().toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' }),
       index: 0,
     };
   }
@@ -459,7 +458,6 @@
         <div class="ai-timeline-item ${roleClass}" data-index="${index}" data-id="${msg.id}">
           <div class="ai-timeline-item-header">
             <span class="ai-timeline-role">${roleIcon} ${roleLabel}</span>
-            <span class="ai-timeline-time">${msg.timestamp}</span>
           </div>
           <div class="ai-timeline-item-content">${escapeHtml(msg.content)}</div>
         </div>
