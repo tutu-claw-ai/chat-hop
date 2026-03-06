@@ -129,6 +129,17 @@
         aiContainerPattern: 'group relative',
       },
     },
+    // Gemini
+    gemini: {
+      name: 'Gemini',
+      hostPattern: /gemini\.google\.com/,
+      selectors: {
+        container: 'body',
+        userMessage: 'user-query',
+        aiMessage: 'model-response',
+        bubble: '.query-content, message-content',
+      },
+    },
   };
 
   // 状态
