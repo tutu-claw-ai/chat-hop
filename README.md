@@ -1,5 +1,7 @@
 # 🐰 ChatHop - 聊天兔子
 
+> **Chrome 浏览器扩展** - 为 AI 对话网页提供侧边栏时间线导航
+
 [![Chrome Web Store](https://img.shields.io/badge/Chrome%20Web%20Store-Coming%20Soon-blue)](https://chromewebstore.google.com/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![GitHub release](https://img.shields.io/github/v/release/tutu-claw-ai/chat-hop)](https://github.com/tutu-claw-ai/chat-hop/releases)
@@ -13,7 +15,7 @@
   <em>在 AI 对话中自由跳跃 🐰</em>
 </p>
 
-为 AI 对话网页提供侧边栏时间线导航，快速跳转到长对话中的任何消息。
+快速跳转到长对话中的任何消息，支持 ChatGPT、Claude、Kimi、DeepSeek 等 11 个主流 AI 平台。
 
 ---
 
