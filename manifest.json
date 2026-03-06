@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChatHop - 聊天兔子",
-  "version": "2.2.4",
+  "version": "2.3.6",
   "description": "🐰 为 AI 对话网页提供侧边栏时间线导航，快速跳转到长对话中的任何消息。支持千问、元宝、豆包、Kimi 等主流 AI 平台。",
   "permissions": [
     "activeTab",
@@ -19,7 +19,11 @@
     "https://kimi.moonshot.cn/*",
     "https://chat.deepseek.com/*",
     "https://yiyan.baidu.com/*",
-    "https://agent.minimaxi.com/*"
+    "https://agent.minimaxi.com/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://grok.com/*",
+    "https://claude.ai/*"
   ],
   "content_scripts": [
     {
@@ -78,6 +82,31 @@
     {
       "matches": [
         "https://agent.minimaxi.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://grok.com/*"
+      ],
+      "js": ["content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://claude.ai/*"
       ],
       "js": ["content.js"],
       "css": ["styles.css"],

@@ -94,6 +94,41 @@
         bubble: '.message-content',
       },
     },
+    // ChatGPT
+    chatgpt: {
+      name: 'ChatGPT',
+      hostPattern: /chatgpt\.com/,
+      selectors: {
+        container: 'main',
+        userMessage: '[data-message-author-role="user"]',
+        aiMessage: '[data-message-author-role="assistant"]',
+        bubble: '[class*="text-message"]',
+      },
+    },
+    // Grok
+    grok: {
+      name: 'Grok',
+      hostPattern: /grok\.com/,
+      selectors: {
+        container: 'main',
+        userMessage: '[class*="items-end"] .message-bubble',
+        aiMessage: '[class*="items-start"] .message-bubble',
+        bubble: '.message-bubble',
+      },
+    },
+    // Claude
+    claude: {
+      name: 'Claude',
+      hostPattern: /claude\.ai/,
+      selectors: {
+        container: 'body',
+        userMessage: '[data-testid="user-message"]',
+        aiMessage: '[data-testid="user-message"]', // 占位，实际用特殊处理
+        bubble: '[data-testid="user-message"], [class*="font-claude-response"]:not([class*="response-body"])',
+        // Claude AI 消息需要特殊处理：找包含 font-claude-response 的容器
+        aiContainerPattern: 'group relative',
+      },
+    },
   };
 
   // 状态
@@ -240,8 +275,20 @@
     }
     
     // 查找用户消息和 AI 消息
-    const userMessages = container.querySelectorAll(selectors.userMessage);
-    const aiMessages = container.querySelectorAll(selectors.aiMessage);
+    let userMessages = Array.from(container.querySelectorAll(selectors.userMessage));
+    let aiMessages = [];
+    
+    // Claude 特殊处理：AI 消息需要找容器
+    if (currentPlatform.key === 'claude' && selectors.aiContainerPattern) {
+      const aiContainers = new Set();
+      container.querySelectorAll('[class*="font-claude-response"]:not([class*="response-body"])').forEach(el => {
+        const container = el.closest(`[class*="${selectors.aiContainerPattern}"]`);
+        if (container) aiContainers.add(container);
+      });
+      aiMessages = Array.from(aiContainers);
+    } else {
+      aiMessages = Array.from(container.querySelectorAll(selectors.aiMessage));
+    }
     
     console.log(`[ChatHop] 找到 ${userMessages.length} 个用户消息, ${aiMessages.length} 个 AI 消息`);
     
@@ -272,8 +319,20 @@
   function scanMessagesFallback() {
     const selectors = currentPlatform.selectors;
     
-    const userMessages = document.querySelectorAll(selectors.userMessage);
-    const aiMessages = document.querySelectorAll(selectors.aiMessage);
+    let userMessages = Array.from(document.querySelectorAll(selectors.userMessage));
+    let aiMessages = [];
+    
+    // Claude 特殊处理
+    if (currentPlatform.key === 'claude' && selectors.aiContainerPattern) {
+      const aiContainers = new Set();
+      document.querySelectorAll('[class*="font-claude-response"]:not([class*="response-body"])').forEach(el => {
+        const container = el.closest(`[class*="${selectors.aiContainerPattern}"]`);
+        if (container) aiContainers.add(container);
+      });
+      aiMessages = Array.from(aiContainers);
+    } else {
+      aiMessages = Array.from(document.querySelectorAll(selectors.aiMessage));
+    }
     
     userMessages.forEach((el, index) => {
       const msg = extractMessageInfo(el, 'user', index);
@@ -293,11 +352,14 @@
 
   // 按位置排序消息
   function sortMessagesByPosition() {
+    // 使用 DOM 顺序而不是视口位置
     messages.sort((a, b) => {
       try {
-        const posA = a.element.getBoundingClientRect().top;
-        const posB = b.element.getBoundingClientRect().top;
-        return posA - posB;
+        // compareDocumentPosition 返回：
+        // 2: a 在 b 之后
+        // 4: a 在 b 之前
+        const position = a.element.compareDocumentPosition(b.element);
+        return position & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1;
       } catch (e) {
         return 0;
       }
