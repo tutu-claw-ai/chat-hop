@@ -1,4 +1,4 @@
-/* AI Chat Timeline - 样式 */
+/* AI Chat Timeline - 样式 v2 */
 
 /* 切换按钮 */
 #ai-timeline-toggle {
@@ -15,18 +15,23 @@
   justify-content: center;
   cursor: pointer;
   z-index: 999999;
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.5), 0 2px 6px rgba(0,0,0,0.1);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: white;
 }
 
 #ai-timeline-toggle:hover {
-  transform: translateY(-50%) scale(1.1);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 6px 25px rgba(102, 126, 234, 0.6), 0 4px 12px rgba(0,0,0,0.15);
+}
+
+#ai-timeline-toggle:active {
+  transform: translateY(-50%) scale(0.95);
 }
 
 #ai-timeline-toggle.active {
   background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  box-shadow: 0 4px 15px rgba(245, 87, 108, 0.5), 0 2px 6px rgba(0,0,0,0.1);
 }
 
 /* 侧边栏 */
@@ -38,11 +43,11 @@
   height: 100vh;
   background: #ffffff;
   border-left: 1px solid #e0e0e0;
-  box-shadow: -4px 0 20px rgba(0, 0, 0, 0.1);
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.12);
   z-index: 999998;
   display: flex;
   flex-direction: column;
-  transition: right 0.3s ease;
+  transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
 }
 
@@ -53,27 +58,30 @@
 /* 深色模式适配 */
 @media (prefers-color-scheme: dark) {
   #ai-timeline-sidebar {
-    background: #1a1a1a;
+    background: #1e1e1e;
     border-left-color: #333;
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.4);
   }
 }
 
 /* 页面自身深色模式 */
 .ai-dark-mode #ai-timeline-sidebar,
 [data-theme="dark"] #ai-timeline-sidebar {
-  background: #1a1a1a;
+  background: #1e1e1e;
   border-left-color: #333;
+  box-shadow: -8px 0 30px rgba(0, 0, 0, 0.4);
 }
 
 /* 头部 */
 .ai-timeline-header {
-  padding: 16px;
+  padding: 16px 18px;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
 .ai-timeline-header h3 {
@@ -81,45 +89,48 @@
   font-size: 16px;
   font-weight: 600;
   flex: 1;
+  letter-spacing: 0.3px;
 }
 
 .ai-timeline-platform {
-  font-size: 12px;
-  opacity: 0.8;
+  font-size: 11px;
+  opacity: 0.9;
   background: rgba(255,255,255,0.2);
-  padding: 2px 8px;
-  border-radius: 10px;
+  padding: 3px 10px;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
 }
 
 .ai-timeline-close {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.15);
   border: none;
   color: white;
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  font-size: 20px;
+  font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s;
+  transition: all 0.2s ease;
 }
 
 .ai-timeline-close:hover {
   background: rgba(255, 255, 255, 0.3);
+  transform: rotate(90deg);
 }
 
 /* 内容区域 */
 .ai-timeline-content {
   flex: 1;
   overflow-y: auto;
-  padding: 12px;
+  padding: 14px;
 }
 
 /* 滚动条样式 */
 .ai-timeline-content::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
 }
 
 .ai-timeline-content::-webkit-scrollbar-track {
@@ -127,23 +138,33 @@
 }
 
 .ai-timeline-content::-webkit-scrollbar-thumb {
-  background: #ccc;
+  background: #ddd;
   border-radius: 3px;
 }
 
 .ai-timeline-content::-webkit-scrollbar-thumb:hover {
-  background: #aaa;
+  background: #bbb;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ai-timeline-content::-webkit-scrollbar-thumb {
+    background: #444;
+  }
+  
+  .ai-timeline-content::-webkit-scrollbar-thumb:hover {
+    background: #555;
+  }
 }
 
 /* 空状态 */
 .ai-timeline-empty {
   text-align: center;
-  padding: 40px 20px;
+  padding: 50px 20px;
   color: #999;
 }
 
 .ai-timeline-empty p {
-  margin: 8px 0;
+  margin: 10px 0;
   font-size: 14px;
 }
 
@@ -152,65 +173,126 @@
   opacity: 0.7;
 }
 
-/* 消息项 */
+/* 消息项 - 增强版 */
 .ai-timeline-item {
-  padding: 12px;
-  margin-bottom: 8px;
-  background: #f8f9fa;
-  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 10px;
+  background: #fafbfc;
+  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  border-left: 3px solid transparent;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border-left: 4px solid transparent;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  position: relative;
+  overflow: hidden;
 }
 
+/* 悬停效果 - 浮起 */
 .ai-timeline-item:hover {
-  background: #e9ecef;
-  transform: translateX(2px);
+  transform: translateY(-2px) translateX(3px);
+  box-shadow: 0 6px 16px rgba(0,0,0,0.08);
 }
 
+/* 点击效果 - 涟漪 */
+.ai-timeline-item::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(102, 126, 234, 0.15);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+}
+
+.ai-timeline-item:active::after {
+  width: 300px;
+  height: 300px;
+}
+
+/* 当前激活项 - 发光边框 */
 .ai-timeline-item.active {
-  background: #e3f2fd;
+  background: #f0f4ff;
   border-left-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2), 0 4px 12px rgba(102, 126, 234, 0.15);
 }
 
-/* 用户消息 */
+/* 用户消息 - 暖色调 */
 .ai-timeline-item.user-message {
-  border-left-color: #4caf50;
+  border-left-color: #ff9800;
+  background: linear-gradient(135deg, #fffaf5 0%, #fff8f0 100%);
 }
 
 .ai-timeline-item.user-message:hover {
-  background: #e8f5e9;
+  background: linear-gradient(135deg, #fff5eb 0%, #ffefdf 100%);
+  border-left-color: #f57c00;
 }
 
-/* AI消息 */
+.ai-timeline-item.user-message.active {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.25), 0 4px 12px rgba(255, 152, 0, 0.15);
+}
+
+/* AI消息 - 冷色调 */
 .ai-timeline-item.assistant-message {
-  border-left-color: #2196f3;
+  border-left-color: #3f51b5;
+  background: linear-gradient(135deg, #f8faff 0%, #f0f4ff 100%);
 }
 
 .ai-timeline-item.assistant-message:hover {
-  background: #e3f2fd;
+  background: linear-gradient(135deg, #e8f0ff 0%, #e0e8ff 100%);
+  border-left-color: #303f9f;
+}
+
+.ai-timeline-item.assistant-message.active {
+  background: linear-gradient(135deg, #e8eaff 0%, #d8dfff 100%);
+  box-shadow: 0 0 0 2px rgba(63, 81, 181, 0.25), 0 4px 12px rgba(63, 81, 181, 0.15);
 }
 
 /* 深色模式下的消息项 */
 @media (prefers-color-scheme: dark) {
   .ai-timeline-item {
     background: #2a2a2a;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   }
   
   .ai-timeline-item:hover {
-    background: #333;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.3);
   }
   
   .ai-timeline-item.active {
-    background: #1a3a5c;
+    background: #1a2a4a;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.3), 0 4px 12px rgba(102, 126, 234, 0.2);
+  }
+  
+  .ai-timeline-item.user-message {
+    background: linear-gradient(135deg, #2a2520 0%, #302a20 100%);
+    border-left-color: #ff9800;
   }
   
   .ai-timeline-item.user-message:hover {
-    background: #1a3a2a;
+    background: linear-gradient(135deg, #352d20 0%, #3d3320 100%);
+  }
+  
+  .ai-timeline-item.user-message.active {
+    background: linear-gradient(135deg, #3d3020 0%, #4a3820 100%);
+    box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.3), 0 4px 12px rgba(255, 152, 0, 0.2);
+  }
+  
+  .ai-timeline-item.assistant-message {
+    background: linear-gradient(135deg, #202530 0%, #1a2030 100%);
+    border-left-color: #5c6bc0;
   }
   
   .ai-timeline-item.assistant-message:hover {
-    background: #1a2a4a;
+    background: linear-gradient(135deg, #252a38 0%, #1e2535 100%);
+  }
+  
+  .ai-timeline-item.assistant-message.active {
+    background: linear-gradient(135deg, #252a40 0%, #1e2545 100%);
+    box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3), 0 4px 12px rgba(92, 107, 192, 0.2);
   }
 }
 
@@ -219,81 +301,90 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .ai-timeline-role {
   font-size: 14px;
+  font-weight: 500;
 }
 
 .ai-timeline-time {
-  font-size: 11px;
+  font-size: 10px;
   color: #999;
+  background: rgba(0,0,0,0.04);
+  padding: 2px 6px;
+  border-radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .ai-timeline-time {
+    background: rgba(255,255,255,0.06);
+  }
 }
 
 /* 消息内容 */
 .ai-timeline-item-content {
   font-size: 13px;
-  line-height: 1.5;
-  color: #333;
+  line-height: 1.6;
+  color: #444;
   word-break: break-word;
 }
 
 @media (prefers-color-scheme: dark) {
   .ai-timeline-item-content {
-    color: #e0e0e0;
+    color: #ddd;
   }
 }
 
 /* 底部 */
 .ai-timeline-footer {
-  padding: 12px 16px;
-  border-top: 1px solid #e0e0e0;
+  padding: 14px 18px;
+  border-top: 1px solid #eee;
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  background: #fafafa;
 }
 
 @media (prefers-color-scheme: dark) {
   .ai-timeline-footer {
     border-top-color: #333;
+    background: #1a1a1a;
   }
 }
 
 .ai-timeline-count {
   font-size: 12px;
   color: #666;
+  font-weight: 500;
 }
 
 .ai-timeline-refresh {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  padding: 4px 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
   cursor: pointer;
   font-size: 12px;
-  transition: all 0.2s;
+  color: white;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
 }
 
 .ai-timeline-refresh:hover {
-  background: #f0f0f0;
-  border-color: #ccc;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ai-timeline-refresh:active {
+  transform: translateY(0);
 }
 
 @media (prefers-color-scheme: dark) {
   .ai-timeline-count {
-    color: #999;
-  }
-  
-  .ai-timeline-refresh {
-    border-color: #444;
-    color: #ccc;
-  }
-  
-  .ai-timeline-refresh:hover {
-    background: #333;
-    border-color: #555;
+    color: #aaa;
   }
 }
 
@@ -301,7 +392,7 @@
 @keyframes fadeIn {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(12px);
   }
   to {
     opacity: 1;
@@ -310,7 +401,7 @@
 }
 
 .ai-timeline-item {
-  animation: fadeIn 0.3s ease;
+  animation: fadeIn 0.35s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* 响应式 */
@@ -320,8 +411,12 @@
   }
   
   #ai-timeline-toggle {
-    width: 40px;
-    height: 40px;
-    right: 10px;
+    width: 44px;
+    height: 44px;
+    right: 12px;
+  }
+  
+  .ai-timeline-item {
+    padding: 12px;
   }
 }
