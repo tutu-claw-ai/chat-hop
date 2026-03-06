@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "ChatHop - 聊天兔子",
-  "version": "0.9.2",
+  "version": "0.9.3",
   "description": "🐰 为 AI 对话网页提供侧边栏时间线导航，快速跳转到长对话中的任何消息。支持千问、元宝、豆包、Kimi 等主流 AI 平台。",
   "permissions": [
     "activeTab",
