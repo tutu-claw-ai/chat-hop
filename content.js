@@ -698,63 +698,26 @@
         const found = window.find(sentence, false, false, true, false, true, false);
 
         if (found) {
-          // 成功找到并高亮句子
+          // 成功找到句子
           console.log(`[ChatHop] 精确定位到句子: ${sentence.substring(0, 30)}...`);
           
-          // 添加自定义高亮效果
-          const selection = window.getSelection();
-          if (selection && selection.rangeCount > 0) {
-            const range = selection.getRangeAt(0);
-            
-            // 创建高亮 span
-            const highlightSpan = document.createElement('span');
-            highlightSpan.className = 'chathop-search-highlight';
-            highlightSpan.style.cssText = `
-              background: linear-gradient(135deg, #fff9c4 0%, #ffecb3 100%);
-              padding: 2px 4px;
-              border-radius: 3px;
-              box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
-              animation: chathop-pulse 0.5s ease-in-out 3;
-            `;
-            
-            try {
-              // 包裹高亮文本
-              range.surroundContents(highlightSpan);
-              
-              // 再次调整滚动位置到视口中央
-              setTimeout(() => {
-                const rect = highlightSpan.getBoundingClientRect();
-                if (rect) {
-                  window.scrollTo({
-                    top: rect.top + window.scrollY - window.innerHeight / 3,
-                    behavior: 'smooth'
-                  });
-                }
-              }, 100);
-              
-              // 3秒后移除高亮效果
-              setTimeout(() => {
-                // 恢复原始文本
-                const parent = highlightSpan.parentNode;
-                if (parent) {
-                  while (highlightSpan.firstChild) {
-                    parent.insertBefore(highlightSpan.firstChild, highlightSpan);
-                  }
-                  parent.removeChild(highlightSpan);
-                }
-              }, 3000);
-            } catch (e) {
-              // 如果 surroundContents 失败，回退到简单滚动
-              console.log(`[ChatHop] 高亮包裹失败，使用简单滚动`);
+          // window.find() 会自动高亮匹配的文本（浏览器默认蓝色高亮）
+          // 只需要调整滚动位置
+          setTimeout(() => {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
               const rect = range.getBoundingClientRect();
               if (rect) {
+                // 将高亮文本滚动到视口中央
                 window.scrollTo({
                   top: rect.top + window.scrollY - window.innerHeight / 3,
                   behavior: 'smooth'
                 });
               }
             }
-          }
+          }, 100);
+          
           return;
         } else {
           console.log(`[ChatHop] 精确匹配失败，回退到消息级滚动`);

@@ -632,9 +632,29 @@
   color: #000;
 }
 
-/* ChatHop 自定义高亮 */
+/* ChatHop 自定义高亮 - 搜索结果包裹 */
 .chathop-search-highlight {
   background: linear-gradient(135deg, #fff9c4 0%, #ffecb3 100%);
+  padding: 2px 4px;
+  border-radius: 3px;
+  box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
+  animation: chathop-pulse 0.5s ease-in-out 3;
+}
+
+/* ChatHop 临时高亮 - 整个消息元素 */
+.chathop-temp-highlight {
+  position: relative;
+  background: linear-gradient(135deg, rgba(255, 249, 196, 0.8) 0%, rgba(255, 236, 179, 0.8) 100%) !important;
+  box-shadow: 0 0 0 3px rgba(255, 193, 7, 0.8), 0 4px 20px rgba(255, 193, 7, 0.4) !important;
+  animation: chathop-pulse 0.5s ease-in-out 3;
+  transition: all 0.3s ease;
+  z-index: 10;
+  border-radius: 8px;
+}
+
+/* ChatHop 搜索结果高亮 */
+.chathop-search-highlight {
+  background: linear-gradient(135deg, #fff9c4 0%, #ffecb3 100%) !important;
   padding: 2px 4px;
   border-radius: 3px;
   box-shadow: 0 0 8px rgba(255, 193, 7, 0.6);
