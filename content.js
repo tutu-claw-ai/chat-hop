@@ -10,6 +10,7 @@
     animationDuration: 300,
     maxSummaryLength: 60,
     observeDebounce: 500,
+    searchContextLines: 2, // 搜索结果显示的上下文行数
   };
 
   // 平台配置 - 根据不同平台设置不同的选择器
@@ -236,11 +237,19 @@
       <div class="ai-timeline-header">
         <h3>🐰 ChatHop</h3>
         <span class="ai-timeline-platform">${currentPlatform.name}</span>
+        <button class="ai-timeline-search-toggle" title="搜索">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+        </button>
         <button class="ai-timeline-close" title="关闭">×</button>
       </div>
-      <div class="ai-timeline-search">
-        <input type="text" class="ai-timeline-search-input" placeholder="🔍 搜索对话内容..." />
-        <button class="ai-timeline-search-clear" title="清空搜索">×</button>
+      <div class="ai-timeline-search-container">
+        <div class="ai-timeline-search">
+          <input type="text" class="ai-timeline-search-input" placeholder="搜索关键词..." />
+          <button class="ai-timeline-search-clear" title="清空">×</button>
+        </div>
       </div>
       <div class="ai-timeline-content">
         <div class="ai-timeline-empty">
@@ -263,9 +272,23 @@
       setSidebarVisible(false);
     });
 
-    // 搜索功能
+    // 搜索图标切换
+    const searchToggle = sidebar.querySelector('.ai-timeline-search-toggle');
+    const searchContainer = sidebar.querySelector('.ai-timeline-search-container');
     const searchInput = sidebar.querySelector('.ai-timeline-search-input');
     const searchClear = sidebar.querySelector('.ai-timeline-search-clear');
+
+    searchToggle.addEventListener('click', () => {
+      const isVisible = searchContainer.classList.toggle('visible');
+      if (isVisible) {
+        searchInput.focus();
+      } else {
+        // 收起时清空搜索
+        searchInput.value = '';
+        searchQuery = '';
+        performSearch();
+      }
+    });
 
     // 实时搜索
     searchInput.addEventListener('input', (e) => {
@@ -281,12 +304,18 @@
       searchInput.focus();
     });
 
-    // ESC 键清空搜索
+    // ESC 键清空并收起
     searchInput.addEventListener('keydown', (e) => {
       if (e.key === 'Escape') {
-        searchInput.value = '';
-        searchQuery = '';
-        performSearch();
+        if (searchQuery) {
+          // 有内容时，先清空
+          searchInput.value = '';
+          searchQuery = '';
+          performSearch();
+        } else {
+          // 无内容时，收起搜索框
+          searchContainer.classList.remove('visible');
+        }
       }
     });
 
@@ -464,16 +493,50 @@
     };
   }
 
-  // 执行搜索
+  // 执行搜索（按句子搜索）
   function performSearch() {
     if (!searchQuery) {
       // 清空搜索，显示所有消息
-      filteredMessages = messages;
+      filteredMessages = [];
     } else {
-      // 过滤包含关键词的消息（不区分大小写）
+      // 按句子搜索
       const query = searchQuery.toLowerCase();
-      filteredMessages = messages.filter(msg => {
-        return msg.fullContent.toLowerCase().includes(query);
+      filteredMessages = [];
+
+      messages.forEach(msg => {
+        // 按句子分割（支持多种分隔符）
+        const sentences = msg.fullContent.split(/[。\n！？；;!?]+/).filter(s => s.trim());
+
+        sentences.forEach((sentence, sentenceIndex) => {
+          if (sentence.toLowerCase().includes(query)) {
+            // 获取上下文（前后各 N 行）
+            const contextLines = [];
+            const contextRange = CONFIG.searchContextLines;
+
+            // 前面的句子
+            for (let i = Math.max(0, sentenceIndex - contextRange); i < sentenceIndex; i++) {
+              contextLines.push({ text: sentences[i], isMatch: false });
+            }
+
+            // 当前匹配的句子
+            contextLines.push({ text: sentence, isMatch: true });
+
+            // 后面的句子
+            for (let i = sentenceIndex + 1; i < Math.min(sentences.length, sentenceIndex + contextRange + 1); i++) {
+              contextLines.push({ text: sentences[i], isMatch: false });
+            }
+
+            filteredMessages.push({
+              id: `${msg.id}-sentence-${sentenceIndex}`,
+              messageId: msg.id,
+              sentence: sentence,
+              contextLines: contextLines,
+              role: msg.role,
+              element: msg.element,
+              fullContent: msg.fullContent,
+            });
+          }
+        });
       });
     }
 
@@ -500,69 +563,105 @@
 
     const content = sidebar.querySelector('.ai-timeline-content');
     const countSpan = sidebar.querySelector('.ai-timeline-count');
-    const searchInput = sidebar.querySelector('.ai-timeline-search-input');
 
-    // 使用过滤后的消息（如果有搜索）或全部消息
-    const displayMessages = searchQuery ? filteredMessages : messages;
-
-    // 更新计数
+    // 搜索模式
     if (searchQuery) {
-      countSpan.textContent = `找到 ${filteredMessages.length} 条 · 共 ${messages.length} 条消息`;
-    } else {
-      countSpan.textContent = `已显示 ${messages.length} 条 · 滚动页面加载更多`;
-    }
+      // 更新计数
+      countSpan.textContent = `找到 ${filteredMessages.length} 处匹配 · 共 ${messages.length} 条消息`;
 
-    // 空状态
-    if (displayMessages.length === 0) {
-      if (searchQuery) {
+      // 空结果
+      if (filteredMessages.length === 0) {
         content.innerHTML = `
           <div class="ai-timeline-empty">
-            <p>🔍 未找到匹配的消息</p>
+            <p>🔍 未找到匹配的内容</p>
             <p class="ai-timeline-hint">尝试其他关键词</p>
           </div>
         `;
-      } else {
+        return;
+      }
+
+      // 渲染搜索结果（句子片段）
+      const html = filteredMessages.map((result) => {
+        const roleIcon = result.role === 'user' ? '👤' : '🤖';
+        const roleClass = result.role === 'user' ? 'user-message' : 'assistant-message';
+        const roleLabel = result.role === 'user' ? '我' : currentPlatform.name;
+
+        // 渲染上下文
+        const contextHtml = result.contextLines.map(line => {
+          const lineClass = line.isMatch ? 'ai-timeline-search-match' : 'ai-timeline-search-context';
+          const lineText = line.isMatch ? highlightText(line.text, searchQuery) : escapeHtml(line.text);
+          return `<div class="${lineClass}">${lineText}</div>`;
+        }).join('');
+
+        return `
+          <div class="ai-timeline-search-result ${roleClass}" data-id="${result.id}" data-message-id="${result.messageId}">
+            <div class="ai-timeline-search-result-header">
+              <span class="ai-timeline-role">${roleIcon} ${roleLabel}</span>
+            </div>
+            <div class="ai-timeline-search-result-context">
+              ${contextHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      content.innerHTML = html;
+
+      // 绑定点击事件 - 跳转到句子所在位置
+      content.querySelectorAll('.ai-timeline-search-result').forEach(item => {
+        item.addEventListener('click', () => {
+          const messageId = item.dataset.messageId;
+          const originalIndex = messages.findIndex(m => m.id === messageId);
+          if (originalIndex !== -1) {
+            scrollToMessage(originalIndex);
+          }
+        });
+      });
+
+    } else {
+      // 正常模式 - 显示所有消息
+      countSpan.textContent = `已显示 ${messages.length} 条 · 滚动页面加载更多`;
+
+      // 空状态
+      if (messages.length === 0) {
         content.innerHTML = `
           <div class="ai-timeline-empty">
             <p>📭 暂无消息</p>
             <p class="ai-timeline-hint">开始对话后会自动显示</p>
           </div>
         `;
+        return;
       }
-      return;
-    }
 
-    // 渲染消息列表
-    const html = displayMessages.map((msg) => {
-      const roleIcon = msg.role === 'user' ? '👤' : '🤖';
-      const roleClass = msg.role === 'user' ? 'user-message' : 'assistant-message';
-      const roleLabel = msg.role === 'user' ? '我' : currentPlatform.name;
+      // 渲染消息列表
+      const html = messages.map((msg) => {
+        const roleIcon = msg.role === 'user' ? '👤' : '🤖';
+        const roleClass = msg.role === 'user' ? 'user-message' : 'assistant-message';
+        const roleLabel = msg.role === 'user' ? '我' : currentPlatform.name;
 
-      // 高亮搜索关键词
-      const highlightedContent = highlightText(msg.content, searchQuery);
-
-      return `
-        <div class="ai-timeline-item ${roleClass}" data-id="${msg.id}">
-          <div class="ai-timeline-item-header">
-            <span class="ai-timeline-role">${roleIcon} ${roleLabel}</span>
+        return `
+          <div class="ai-timeline-item ${roleClass}" data-id="${msg.id}">
+            <div class="ai-timeline-item-header">
+              <span class="ai-timeline-role">${roleIcon} ${roleLabel}</span>
+            </div>
+            <div class="ai-timeline-item-content">${escapeHtml(msg.content)}</div>
           </div>
-          <div class="ai-timeline-item-content">${highlightedContent}</div>
-        </div>
-      `;
-    }).join('');
+        `;
+      }).join('');
 
-    content.innerHTML = html;
+      content.innerHTML = html;
 
-    // 绑定点击事件
-    content.querySelectorAll('.ai-timeline-item').forEach(item => {
-      item.addEventListener('click', () => {
-        const id = item.dataset.id;
-        const originalIndex = messages.findIndex(m => m.id === id);
-        if (originalIndex !== -1) {
-          scrollToMessage(originalIndex);
-        }
+      // 绑定点击事件
+      content.querySelectorAll('.ai-timeline-item').forEach(item => {
+        item.addEventListener('click', () => {
+          const id = item.dataset.id;
+          const originalIndex = messages.findIndex(m => m.id === id);
+          if (originalIndex !== -1) {
+            scrollToMessage(originalIndex);
+          }
+        });
       });
-    });
+    }
   }
 
   // 滚动到消息
