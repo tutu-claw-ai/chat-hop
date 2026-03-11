@@ -149,6 +149,8 @@
   let toggleButton = null;
   let observer = null;
   let currentPlatform = null;
+  let searchQuery = ''; // 搜索关键词
+  let filteredMessages = []; // 过滤后的消息
 
   // 检测当前平台
   function detectPlatform() {
@@ -227,7 +229,7 @@
       sidebar = document.getElementById('ai-timeline-sidebar');
       return;
     }
-    
+
     sidebar = document.createElement('div');
     sidebar.id = 'ai-timeline-sidebar';
     sidebar.innerHTML = `
@@ -235,6 +237,10 @@
         <h3>🐰 ChatHop</h3>
         <span class="ai-timeline-platform">${currentPlatform.name}</span>
         <button class="ai-timeline-close" title="关闭">×</button>
+      </div>
+      <div class="ai-timeline-search">
+        <input type="text" class="ai-timeline-search-input" placeholder="🔍 搜索对话内容..." />
+        <button class="ai-timeline-search-clear" title="清空搜索">×</button>
       </div>
       <div class="ai-timeline-content">
         <div class="ai-timeline-empty">
@@ -251,11 +257,39 @@
         </a>
       </div>
     `;
-    
+
+    // 关闭按钮
     sidebar.querySelector('.ai-timeline-close').addEventListener('click', () => {
       setSidebarVisible(false);
     });
-    
+
+    // 搜索功能
+    const searchInput = sidebar.querySelector('.ai-timeline-search-input');
+    const searchClear = sidebar.querySelector('.ai-timeline-search-clear');
+
+    // 实时搜索
+    searchInput.addEventListener('input', (e) => {
+      searchQuery = e.target.value.trim();
+      performSearch();
+    });
+
+    // 清空搜索
+    searchClear.addEventListener('click', () => {
+      searchInput.value = '';
+      searchQuery = '';
+      performSearch();
+      searchInput.focus();
+    });
+
+    // ESC 键清空搜索
+    searchInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        searchInput.value = '';
+        searchQuery = '';
+        performSearch();
+      }
+    });
+
     document.body.appendChild(sidebar);
   }
 
@@ -430,47 +464,103 @@
     };
   }
 
+  // 执行搜索
+  function performSearch() {
+    if (!searchQuery) {
+      // 清空搜索，显示所有消息
+      filteredMessages = messages;
+    } else {
+      // 过滤包含关键词的消息（不区分大小写）
+      const query = searchQuery.toLowerCase();
+      filteredMessages = messages.filter(msg => {
+        return msg.fullContent.toLowerCase().includes(query);
+      });
+    }
+
+    updateTimelineUI();
+  }
+
+  // 高亮文本中的关键词
+  function highlightText(text, query) {
+    if (!query) return escapeHtml(text);
+
+    const escapedText = escapeHtml(text);
+    const escapedQuery = escapeHtml(query);
+
+    // 创建正则表达式（不区分大小写）
+    const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+
+    // 替换为高亮 span
+    return escapedText.replace(regex, '<span class="ai-timeline-highlight">$1</span>');
+  }
+
   // 更新时间线UI
   function updateTimelineUI() {
     if (!sidebar) return;
-    
+
     const content = sidebar.querySelector('.ai-timeline-content');
     const countSpan = sidebar.querySelector('.ai-timeline-count');
-    
-    countSpan.textContent = `已显示 ${messages.length} 条 · 滚动页面加载更多`;
-    
-    if (messages.length === 0) {
-      content.innerHTML = `
-        <div class="ai-timeline-empty">
-          <p>📭 暂无消息</p>
-          <p class="ai-timeline-hint">开始对话后会自动显示</p>
-        </div>
-      `;
+    const searchInput = sidebar.querySelector('.ai-timeline-search-input');
+
+    // 使用过滤后的消息（如果有搜索）或全部消息
+    const displayMessages = searchQuery ? filteredMessages : messages;
+
+    // 更新计数
+    if (searchQuery) {
+      countSpan.textContent = `找到 ${filteredMessages.length} 条 · 共 ${messages.length} 条消息`;
+    } else {
+      countSpan.textContent = `已显示 ${messages.length} 条 · 滚动页面加载更多`;
+    }
+
+    // 空状态
+    if (displayMessages.length === 0) {
+      if (searchQuery) {
+        content.innerHTML = `
+          <div class="ai-timeline-empty">
+            <p>🔍 未找到匹配的消息</p>
+            <p class="ai-timeline-hint">尝试其他关键词</p>
+          </div>
+        `;
+      } else {
+        content.innerHTML = `
+          <div class="ai-timeline-empty">
+            <p>📭 暂无消息</p>
+            <p class="ai-timeline-hint">开始对话后会自动显示</p>
+          </div>
+        `;
+      }
       return;
     }
-    
-    const html = messages.map((msg, index) => {
+
+    // 渲染消息列表
+    const html = displayMessages.map((msg) => {
       const roleIcon = msg.role === 'user' ? '👤' : '🤖';
       const roleClass = msg.role === 'user' ? 'user-message' : 'assistant-message';
       const roleLabel = msg.role === 'user' ? '我' : currentPlatform.name;
-      
+
+      // 高亮搜索关键词
+      const highlightedContent = highlightText(msg.content, searchQuery);
+
       return `
-        <div class="ai-timeline-item ${roleClass}" data-index="${index}" data-id="${msg.id}">
+        <div class="ai-timeline-item ${roleClass}" data-id="${msg.id}">
           <div class="ai-timeline-item-header">
             <span class="ai-timeline-role">${roleIcon} ${roleLabel}</span>
           </div>
-          <div class="ai-timeline-item-content">${escapeHtml(msg.content)}</div>
+          <div class="ai-timeline-item-content">${highlightedContent}</div>
         </div>
       `;
     }).join('');
-    
+
     content.innerHTML = html;
-    
+
     // 绑定点击事件
     content.querySelectorAll('.ai-timeline-item').forEach(item => {
       item.addEventListener('click', () => {
-        const index = parseInt(item.dataset.index);
-        scrollToMessage(index);
+        const id = item.dataset.id;
+        const originalIndex = messages.findIndex(m => m.id === id);
+        if (originalIndex !== -1) {
+          scrollToMessage(originalIndex);
+        }
       });
     });
   }

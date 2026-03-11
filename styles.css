@@ -121,6 +121,74 @@
   transform: rotate(90deg);
 }
 
+/* 搜索框 */
+.ai-timeline-search {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+  position: relative;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.ai-timeline-search-input {
+  flex: 1;
+  width: 100%;
+  padding: 8px 32px 8px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  transition: all 0.2s;
+  background: #fafafa;
+}
+
+.ai-timeline-search-input:focus {
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  background: #fff;
+}
+
+.ai-timeline-search-input::placeholder {
+  color: #999;
+}
+
+.ai-timeline-search-clear {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.ai-timeline-search-clear:hover {
+  background: rgba(0, 0, 0, 0.2);
+  color: #333;
+}
+
+/* 搜索高亮 */
+.ai-timeline-highlight {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%);
+  color: #856404;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
 /* 内容区域 */
 .ai-timeline-content {
   flex: 1;
@@ -293,6 +361,38 @@
   .ai-timeline-item.assistant-message.active {
     background: linear-gradient(135deg, #252a40 0%, #1e2545 100%);
     box-shadow: 0 0 0 2px rgba(92, 107, 192, 0.3), 0 4px 12px rgba(92, 107, 192, 0.2);
+  }
+
+  /* 深色模式 - 搜索框 */
+  .ai-timeline-search-input {
+    background: #2d2d2d;
+    border-color: #404040;
+    color: #e0e0e0;
+  }
+
+  .ai-timeline-search-input:focus {
+    border-color: #667eea;
+    background: #333;
+  }
+
+  .ai-timeline-search-input::placeholder {
+    color: #808080;
+  }
+
+  .ai-timeline-search-clear {
+    background: rgba(255, 255, 255, 0.1);
+    color: #aaa;
+  }
+
+  .ai-timeline-search-clear:hover {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+  }
+
+  /* 深色模式 - 搜索高亮 */
+  .ai-timeline-highlight {
+    background: linear-gradient(135deg, #664d03 0%, #857000 100%);
+    color: #ffda6a;
   }
 }
 
