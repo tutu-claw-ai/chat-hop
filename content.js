@@ -606,13 +606,15 @@
 
       content.innerHTML = html;
 
-      // 绑定点击事件 - 跳转到句子所在位置
+      // 绑定点击事件 - 精确跳转到句子
       content.querySelectorAll('.ai-timeline-search-result').forEach(item => {
         item.addEventListener('click', () => {
           const messageId = item.dataset.messageId;
+          const resultId = item.dataset.id;
+          const result = filteredMessages.find(r => r.id === resultId);
           const originalIndex = messages.findIndex(m => m.id === messageId);
-          if (originalIndex !== -1) {
-            scrollToMessage(originalIndex);
+          if (originalIndex !== -1 && result) {
+            scrollToMessage(originalIndex, result.sentence);
           }
         });
       });
@@ -663,20 +665,38 @@
     }
   }
 
-  // 滚动到消息
-  function scrollToMessage(index) {
+  // 滚动到消息（支持精确跳转到句子）
+  function scrollToMessage(index, sentence = null) {
     const msg = messages[index];
     if (!msg || !msg.element) return;
-    
-    // 高亮效果
+
+    // 如果提供了句子，尝试精确跳转到该句子
+    if (sentence && sentence.length > 10) {
+      // 使用 window.find() 精确搜索并高亮句子
+      // 先清空之前的搜索
+      if (window.getSelection) {
+        window.getSelection().removeAllRanges();
+      }
+
+      // 使用 window.find() 搜索句子
+      const found = window.find(sentence, false, false, true, false, true, false);
+
+      if (found) {
+        // 成功找到并高亮句子
+        console.log(`[ChatHop] 精确定位到句子: ${sentence.substring(0, 30)}...`);
+        return;
+      }
+    }
+
+    // 如果没有句子或找不到，回退到滚动到整个消息
     const originalBg = msg.element.style.backgroundColor;
     const originalTransition = msg.element.style.transition;
     msg.element.style.transition = 'background-color 0.3s';
     msg.element.style.backgroundColor = 'rgba(102, 126, 234, 0.2)';
-    
+
     // 滚动到元素顶端
     msg.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    
+
     // 移除高亮
     setTimeout(() => {
       msg.element.style.backgroundColor = originalBg;
@@ -684,7 +704,7 @@
         msg.element.style.transition = originalTransition;
       }, 300);
     }, 2000);
-    
+
     // 高亮时间线项
     sidebar.querySelectorAll('.ai-timeline-item').forEach((item, i) => {
       item.classList.toggle('active', i === index);
