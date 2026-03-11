@@ -396,6 +396,12 @@
     
     console.log(`[ChatHop] 共找到 ${messages.length} 条消息`);
     updateTimelineUI();
+    
+    // 如果有搜索关键词,自动重新搜索
+    if (searchQuery) {
+      console.log(`[ChatHop] 检测到新消息，自动重新搜索: ${searchQuery}`);
+      performSearch();
+    }
   }
 
   // 备用扫描方法
@@ -431,6 +437,12 @@
     
     console.log(`[ChatHop] 备用扫描: ${messages.length} 条消息`);
     updateTimelineUI();
+    
+    // 如果有搜索关键词,自动重新搜索
+    if (searchQuery) {
+      console.log(`[ChatHop] 检测到新消息（备用扫描），自动重新搜索: ${searchQuery}`);
+      performSearch();
+    }
   }
 
   // 按位置排序消息
@@ -665,27 +677,52 @@
     }
   }
 
-  // 滚动到消息（支持精确跳转到句子）
+  // 滚动到消息（支持精确跳转到句子)
   function scrollToMessage(index, sentence = null) {
     const msg = messages[index];
     if (!msg || !msg.element) return;
 
     // 如果提供了句子，尝试精确跳转到该句子
     if (sentence && sentence.length > 10) {
-      // 使用 window.find() 精确搜索并高亮句子
-      // 先清空之前的搜索
-      if (window.getSelection) {
-        window.getSelection().removeAllRanges();
-      }
+      // 先滚动到消息元素，确保句子在可见区域内
+      msg.element.scrollIntoView({ behavior: 'instant', block: 'center' });
 
-      // 使用 window.find() 搜索句子
-      const found = window.find(sentence, false, false, true, false, true, false);
+      // 给浏览器一点时间渲染
+      setTimeout(() => {
+        // 清空之前的搜索高亮
+        if (window.getSelection) {
+          window.getSelection().removeAllRanges();
+        }
 
-      if (found) {
-        // 成功找到并高亮句子
-        console.log(`[ChatHop] 精确定位到句子: ${sentence.substring(0, 30)}...`);
-        return;
-      }
+        // 使用 window.find() 搜索句子
+        const found = window.find(sentence, false, false, true, false, true, false);
+
+        if (found) {
+          // 成功找到并高亮句子
+          console.log(`[ChatHop] 精确定位到句子: ${sentence.substring(0, 30)}...`);
+          
+          // window.find() 会自动滚动到匹配位置，但可能不够理想
+          // 再次调整滚动位置，将高亮文本移到视口中央
+          setTimeout(() => {
+            const selection = window.getSelection();
+            if (selection && selection.rangeCount > 0) {
+              const range = selection.getRangeAt(0);
+              const rect = range.getBoundingClientRect();
+              if (rect) {
+                // 将高亮文本滚动到视口上方 1/3 处
+                window.scrollTo({
+                  top: rect.top + window.scrollY - window.innerHeight / 3,
+                  behavior: 'smooth'
+                });
+              }
+            }
+          }, 100);
+          return;
+        } else {
+          console.log(`[ChatHop] 精确匹配失败，回退到消息级滚动`);
+        }
+      }, 50);
+      return;
     }
 
     // 如果没有句子或找不到，回退到滚动到整个消息
