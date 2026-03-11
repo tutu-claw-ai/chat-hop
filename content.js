@@ -10,7 +10,7 @@
     animationDuration: 300,
     maxSummaryLength: 60,
     observeDebounce: 500,
-    searchContextLines: 2, // 搜索结果显示的上下文行数
+    searchContextLines: 1, // 搜索结果显示的上下文行数（前后各 1 行）
   };
 
   // 平台配置 - 根据不同平台设置不同的选择器
@@ -509,21 +509,20 @@
 
         sentences.forEach((sentence, sentenceIndex) => {
           if (sentence.toLowerCase().includes(query)) {
-            // 获取上下文（前后各 N 行）
+            // 获取上下文（只显示前后各 1 行）
             const contextLines = [];
-            const contextRange = CONFIG.searchContextLines;
 
-            // 前面的句子
-            for (let i = Math.max(0, sentenceIndex - contextRange); i < sentenceIndex; i++) {
-              contextLines.push({ text: sentences[i], isMatch: false });
+            // 前面的句子（只显示 1 行）
+            if (sentenceIndex > 0) {
+              contextLines.push({ text: sentences[sentenceIndex - 1], isMatch: false });
             }
 
             // 当前匹配的句子
             contextLines.push({ text: sentence, isMatch: true });
 
-            // 后面的句子
-            for (let i = sentenceIndex + 1; i < Math.min(sentences.length, sentenceIndex + contextRange + 1); i++) {
-              contextLines.push({ text: sentences[i], isMatch: false });
+            // 后面的句子（只显示 1 行）
+            if (sentenceIndex < sentences.length - 1) {
+              contextLines.push({ text: sentences[sentenceIndex + 1], isMatch: false });
             }
 
             filteredMessages.push({
