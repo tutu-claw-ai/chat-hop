@@ -545,8 +545,9 @@
             id: `${msg.id}-s${sentenceIndex}-m${matchIndex}`,
             messageId: msg.id,
             messageIndex: msgIndex,
-            matchIndex: matchIndex,  // 新增：这是消息中第几个匹配
+            matchIndex: matchIndex,  // 这是消息中第几个匹配
             sentence: trimmed,
+            searchKeyword: searchQuery,  // 原始搜索关键词，用于高亮
             contextLines: contextLines,
             role: msg.role,
           });
@@ -629,7 +630,7 @@
           const result = filteredMessages.find(r => r.id === resultId);
           const originalIndex = result ? result.messageIndex : messages.findIndex(m => m.id === messageId);
           if (originalIndex !== -1 && result) {
-            scrollToMessage(originalIndex, result.sentence, result.matchIndex);
+            scrollToMessage(originalIndex, result.sentence, result.matchIndex, result.searchKeyword);
           }
         });
       });
@@ -812,7 +813,7 @@
     return smallest;
   }
 
-  function scrollToMessage(index, sentence, matchIndex = 0) {
+  function scrollToMessage(index, sentence, matchIndex = 0, searchKeyword = null) {
     const msg = messages[index];
     if (!msg || !msg.element) {
       console.log('[ChatHop] ❌ scrollToMessage: 消息不存在', { index });
@@ -823,14 +824,16 @@
       index,
       sentence: sentence ? sentence.substring(0, 50) + '...' : '(null)',
       matchIndex,
+      searchKeyword,
       msgElementTag: msg.element.tagName,
       msgElementClass: msg.element.className
     });
 
     clearHighlights();
 
-    // 找到包含句子的最小块级元素
-    const targetElement = sentence ? findSmallestBlockContaining(msg.element, sentence) : null;
+    // 找到包含句子的最小块级元素（用 searchKeyword 或 sentence 来查找）
+    const searchText = searchKeyword || sentence;
+    const targetElement = searchText ? findSmallestBlockContaining(msg.element, searchText) : null;
     const scrollTarget = targetElement || msg.element;
 
     console.log('[ChatHop] 目标元素:', {
@@ -858,12 +861,18 @@
 
     // 等滚动动画完成后再高亮
     setTimeout(() => {
-      if (sentence) {
-        // 优先在目标块级元素内高亮（带 matchIndex），失败则在整个消息内高亮
+      if (searchKeyword) {
+        // 用搜索关键词高亮（比 sentence 更短，更容易匹配）
+        // 优先在目标块级元素内高亮，失败则在整个消息内高亮
+        if (!highlightInElement(scrollTarget, searchKeyword, matchIndex) && scrollTarget !== msg.element) {
+          highlightInElement(msg.element, searchKeyword, matchIndex);
+        }
+        // 如果都失败了，不需要额外处理，highlightInElement 返回 false 时自然没有任何效果
+      } else if (sentence) {
+        // 没有 searchKeyword 时用 sentence
         if (!highlightInElement(scrollTarget, sentence, matchIndex) && scrollTarget !== msg.element) {
           highlightInElement(msg.element, sentence, matchIndex);
         }
-        // 如果都失败了，不需要额外处理，highlightInElement 返回 false 时自然没有任何效果
       } else {
         flashElement(scrollTarget);
       }
