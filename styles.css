@@ -92,13 +92,47 @@
   letter-spacing: 0.3px;
 }
 
-.ai-timeline-platform {
-  font-size: 11px;
-  opacity: 0.9;
-  background: rgba(255,255,255,0.2);
-  padding: 3px 10px;
+/* 加载全部按钮 */
+.ai-timeline-load-all {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  padding: 4px 10px;
   border-radius: 12px;
-  backdrop-filter: blur(4px);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.ai-timeline-load-all:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.ai-timeline-load-all:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ai-timeline-load-all.loading {
+  animation: pulse 1s infinite;
+}
+
+.ai-timeline-load-all.loaded {
+  background: rgba(76, 175, 80, 0.3);
+}
+
+.ai-timeline-load-all svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 .ai-timeline-close {

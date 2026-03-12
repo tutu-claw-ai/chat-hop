@@ -236,7 +236,13 @@
     sidebar.innerHTML = `
       <div class="ai-timeline-header">
         <h3>🐰 ChatHop</h3>
-        <span class="ai-timeline-platform">${currentPlatform.name}</span>
+        <button class="ai-timeline-load-all" title="加载全部对话">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+          <span>加载全部</span>
+        </button>
         <button class="ai-timeline-search-toggle" title="搜索">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="11" cy="11" r="8"/>
@@ -271,6 +277,9 @@
     sidebar.querySelector('.ai-timeline-close').addEventListener('click', () => {
       setSidebarVisible(false);
     });
+
+    // 加载全部按钮
+    sidebar.querySelector('.ai-timeline-load-all').addEventListener('click', loadAllMessages);
 
     // 搜索图标切换
     const searchToggle = sidebar.querySelector('.ai-timeline-search-toggle');
@@ -338,6 +347,74 @@
       sidebar.classList.remove('visible');
       toggleButton.style.display = 'flex'; // 侧边栏关闭时显示浮球
     }
+  }
+
+  // 加载全部消息
+  async function loadAllMessages() {
+    const btn = sidebar.querySelector('.ai-timeline-load-all');
+    const btnText = btn.querySelector('span');
+    const originalText = btnText.textContent;
+    
+    // 更新按钮状态
+    btn.disabled = true;
+    btnText.textContent = '加载中...';
+    btn.classList.add('loading');
+    
+    console.log('[ChatHop] 开始加载全部消息...');
+    
+    // 找到滚动容器
+    const firstMsg = messages[0];
+    const scrollContainer = firstMsg ? findScrollContainer(firstMsg.element) : null;
+    
+    if (!scrollContainer) {
+      console.log('[ChatHop] ❌ 未找到滚动容器');
+      btnText.textContent = '无法加载';
+      setTimeout(() => {
+        btn.disabled = false;
+        btnText.textContent = originalText;
+        btn.classList.remove('loading');
+      }, 2000);
+      return;
+    }
+    
+    let prevHeight = scrollContainer.scrollHeight;
+    let attempts = 0;
+    const maxAttempts = 30; // 最多尝试 30 次
+    let loadedCount = 0;
+    
+    while (attempts < maxAttempts) {
+      // 滚动到顶部
+      scrollContainer.scrollTo({ top: 0, behavior: 'instant' });
+      
+      // 等待加载
+      await new Promise(r => setTimeout(r, 800));
+      
+      // 检查是否有新内容
+      if (scrollContainer.scrollHeight > prevHeight) {
+        loadedCount++;
+        prevHeight = scrollContainer.scrollHeight;
+        btnText.textContent = `加载中 ${loadedCount}...`;
+        attempts = 0; // 有新内容，重置计数
+      } else {
+        attempts++;
+      }
+    }
+    
+    console.log(`[ChatHop] 加载完成，共 ${loadedCount} 轮`);
+    
+    // 重新扫描
+    scanMessages();
+    
+    // 恢复按钮状态
+    btnText.textContent = '✓ 已加载';
+    btn.classList.remove('loading');
+    btn.classList.add('loaded');
+    
+    setTimeout(() => {
+      btn.disabled = false;
+      btnText.textContent = originalText;
+      btn.classList.remove('loaded');
+    }, 2000);
   }
 
   // 扫描消息
