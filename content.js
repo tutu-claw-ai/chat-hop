@@ -798,15 +798,20 @@
             range.setStart(nodePos.node, startOffset);
             range.setEnd(nodePos.node, endOffset);
 
-            // 滚动到 Range 的位置
-            range.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // 高亮选中的文本
+            // 高亮选中的文本（必须先添加到 Selection，getBoundingClientRect 才能正确工作）
             const selection = window.getSelection();
             if (selection) {
               selection.removeAllRanges();
               selection.addRange(range);
             }
+
+            // 使用 getBoundingClientRect 滚动到 Range 位置
+            const rect = range.getBoundingClientRect();
+            const scrollTop = rect.top + window.scrollY - window.innerHeight / 2;
+            window.scrollTo({
+              top: Math.max(0, scrollTop),
+              behavior: 'smooth'
+            });
 
             console.log(`[ChatHop] 精确定位到句子(位置 ${sentenceStart}): ${sentence.substring(0, 30)}...`);
             return;
