@@ -76,21 +76,26 @@
   index: 0,                           // 在消息数组中的位置
 }
 
-// 搜索结果对象
+// 搜索结果对象（v0.9.19 简化版）
 {
-  id: "chat-msg-user-0-1234567890-sentence-0-100",
-  messageId: "chat-msg-user-0-1234567890",
-  sentence: "匹配的句子",
-  sentenceStart: 100,                 // 句子在消息文本中的起始位置
-  sentenceEnd: 115,                   // 句子在消息文本中的结束位置
-  targetNode: TextNode,               // 包含句子的文本节点
-  targetOffset: 50,                   // 句子在文本节点中的偏移量
-  contextLines: [...],                // 上下文句子
+  id: "chat-msg-user-0-s0",           // 唯一 ID
+  messageId: "chat-msg-user-0-xxx",   // 关联的消息 ID
+  messageIndex: 0,                     // 消息在数组中的索引
+  sentence: "匹配的句子",               // 匹配的句子文本
+  contextLines: [                      // 上下文（前后各 1 句）
+    { text: "前一句", isMatch: false },
+    { text: "匹配的句子", isMatch: true },
+    { text: "后一句", isMatch: false },
+  ],
   role: "user" | "assistant",
-  element: HTMLElement,
-  fullContent: "完整内容...",
 }
 ```
+
+**v0.9.19 简化说明**：
+- 移除了 `sentenceStart`、`sentenceEnd`（字符偏移量不可靠）
+- 移除了 `targetNode`、`targetOffset`（DOM 引用在 React/Vue 下会失效）
+- 移除了 `element`、`fullContent`（不需要重复存储）
+- 跳转时直接用 `messageIndex` + `sentence` 实时查找
 
 ### 2.3 核心流程
 
@@ -124,7 +129,7 @@ sortMessagesByPosition() - 按 DOM 位置排序
 updateTimelineUI() - 更新侧边栏 UI
 ```
 
-#### 流程3: 搜索
+#### 流程3: 搜索（v0.9.19 简化版）
 
 ```
 用户输入关键词
@@ -132,207 +137,181 @@ updateTimelineUI() - 更新侧边栏 UI
 performSearch()
     ↓
 遍历每条消息
-    ├── TreeWalker 遍历所有文本节点
-    ├── 记录每个文本节点的位置 (nodePositions)
-    ├── 按句子分割消息内容
-    ├── 找到匹配的句子
-    ├── 记录句子的精确位置 (sentenceStart, sentenceEnd)
-    └── 找到包含句子的文本节点 (targetNode)
+    ├── 获取消息元素的 textContent
+    ├── 按句子分割（中英文标点 + 换行）
+    ├── 过滤包含关键词的句子
+    └── 构建上下文（前后各 1 句）
     ↓
 updateTimelineUI() - 显示搜索结果
 ```
 
-#### 流程4: 跳转
+**简化要点**：
+- 不再记录字符偏移量
+- 不再遍历文本节点
+- 不再存储 DOM 引用
+
+#### 流程4: 跳转（v0.9.19 新方案）
 
 ```
-用户点击时间线项
+用户点击搜索结果
     ↓
-scrollToMessage(index, sentence, sentenceStart, sentenceEnd)
+scrollToMessage(index, sentence)
     ↓
-有精确位置？
-    ├── 是 → 创建 Range → 滚动到 Range 位置 → 高亮文本
-    └── 否 → scrollIntoView 滚动到整个消息
+clearHighlights() - 清除之前的高亮
+    ↓
+findScrollContainer() - 找到实际的滚动容器
+    ↓
+滚动到消息位置
+    ├── 有滚动容器 → container.scrollTo()
+    └── 无滚动容器 → element.scrollIntoView()
+    ↓
+setTimeout 400ms 后
+    ├── 有句子 → highlightInElement() 用 <mark> 标签高亮
+    └── 无句子 → flashElement() 闪烁整个消息
 ```
 
 ---
 
-## 三、当前问题
+## 三、跳转方案设计（v0.9.19 实现）
 
-### 3.1 Bug: Range.scrollIntoView 不存在
+### 3.1 问题分析
 
-**错误信息**：
+**原始方案的问题**：
+
+1. **`window.scrollTo()` 不起作用**
+   - AI 聊天页面用内部 div 滚动，不是 window
+   - 需要找到实际的滚动容器
+
+2. **字符偏移量不可靠**
+   - 搜索时计算 `sentenceStart`，跳转时重新遍历
+   - DOM 变化后偏移量失效
+   - 分割句子时分隔符被丢弃，indexOf 找不到正确位置
+
+3. **DOM 引用会失效**
+   - `targetNode` 存的是文本节点引用
+   - React/Vue 重渲染后引用失效
+
+### 3.2 新方案：两步法
+
+**核心思路**：先滚动到消息，再在消息内高亮
+
 ```
-TypeError: range.scrollIntoView is not a function
+步骤1: 滚动到消息元素
+       使用正确的滚动容器（向上查找 overflow: auto/scroll 的父元素）
+
+步骤2: 在消息元素内高亮句子
+       用 TreeWalker 遍历文本节点 + <mark> 标签包裹
 ```
 
-**根本原因**：
-- `scrollIntoView()` 是 `Element` 的方法
-- `Range` 对象没有 `scrollIntoView()` 方法
+### 3.3 核心函数
 
-**错误代码** (content.js:802):
+#### findScrollContainer - 找滚动容器
+
 ```javascript
-range.scrollIntoView({ behavior: 'smooth', block: 'center' });
-```
-
-**正确的做法**：
-```javascript
-// 方法1: 使用 Range 的 getBoundingClientRect
-const rect = range.getBoundingClientRect();
-window.scrollTo({
-  top: rect.top + window.scrollY - window.innerHeight / 2,
-  behavior: 'smooth'
-});
-
-// 方法2: 找到包含 Range 的最近块级元素，用 element.scrollIntoView
-const container = range.startContainer.parentElement;
-const blockElement = container.closest('p, div, section, article');
-if (blockElement) {
-  blockElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+function findScrollContainer(element) {
+  let parent = element.parentElement;
+  while (parent && parent !== document.body) {
+    const style = window.getComputedStyle(parent);
+    const overflowY = style.overflowY;
+    if ((overflowY === 'auto' || overflowY === 'scroll') && 
+        parent.scrollHeight > parent.clientHeight) {
+      return parent;
+    }
+    parent = parent.parentElement;
+  }
+  return null;
 }
-
-// 方法3: 使用 Selection API + CSS 高亮（不依赖滚动）
-// 先滚动到消息元素，再用 CSS 高亮目标文本
 ```
 
-### 3.2 设计问题
+#### highlightInElement - 高亮句子
 
-#### 问题1: 搜索时重复遍历文本节点
-
-**现状**：
-- `performSearch()` 中用 TreeWalker 遍历文本节点
-- `scrollToMessage()` 中又用 TreeWalker 遍历文本节点
-
-**问题**：
-- 重复计算，性能浪费
-- 两次遍历可能得到不同的结果（DOM 可能变化）
-
-#### 问题2: 句子位置计算复杂且不可靠
-
-**现状**：
 ```javascript
-// 按句子分割
-const sentences = allText.split(/[。\n！？；;!?]+/).filter(s => s.trim());
+function highlightInElement(element, sentence) {
+  clearHighlights();
+  
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+  let node;
+  const lowerSentence = sentence.toLowerCase();
 
-// 尝试找到句子在 allText 中的位置
-let matchIndex = allTextLower.indexOf(sentenceLower, searchStart);
+  while ((node = walker.nextNode())) {
+    const idx = node.textContent.toLowerCase().indexOf(lowerSentence);
+    if (idx === -1) continue;
+
+    const range = document.createRange();
+    range.setStart(node, idx);
+    range.setEnd(node, idx + sentence.length);
+
+    const mark = document.createElement('mark');
+    mark.className = 'chathop-highlight';
+    range.surroundContents(mark);
+
+    // 3 秒后淡出
+    setTimeout(() => {
+      mark.classList.add('chathop-highlight-fade');
+      setTimeout(() => mark.replaceWith(document.createTextNode(mark.textContent)), 500);
+    }, 3000);
+
+    return true;
+  }
+  return false;
+}
 ```
 
-**问题**：
-- 分割后的句子可能找不到原始位置（分隔符被去掉了）
-- 同一个句子出现多次时，位置计算可能不准确
-- 跨文本节点的句子处理不正确
+#### scrollToMessage - 主入口
 
-#### 问题3: targetNode 记录了但没用上
-
-**现状**：
-- `performSearch()` 记录了 `targetNode` 和 `targetOffset`
-- `scrollToMessage()` 完全忽略这些信息，重新遍历
-
----
-
-## 四、正确的设计方案
-
-### 4.1 跳转方案选择
-
-#### 方案A: 滚动到消息 + CSS 高亮目标句子
-
-**优点**：
-- 简单可靠，不依赖 Range API
-- 不需要精确计算文本位置
-- 兼容性好
-
-**缺点**：
-- 不能精确滚动到句子位置
-- 如果消息很长，用户需要手动找句子
-
-**实现**：
 ```javascript
 function scrollToMessage(index, sentence) {
   const msg = messages[index];
-  
-  // 1. 滚动到消息元素
-  msg.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  
-  // 2. 如果有句子，用 CSS 高亮
-  if (sentence && sentence.length > 10) {
-    highlightSentenceInElement(msg.element, sentence);
+  if (!msg || !msg.element) return;
+
+  clearHighlights();
+
+  const element = msg.element;
+  const scrollContainer = findScrollContainer(element);
+
+  if (scrollContainer) {
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const msgRect = element.getBoundingClientRect();
+    const offset = msgRect.top - containerRect.top;
+    scrollContainer.scrollTo({
+      top: scrollContainer.scrollTop + offset - 80,
+      behavior: 'smooth'
+    });
+  } else {
+    element.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-}
 
-function highlightSentenceInElement(element, sentence) {
-  // 使用 window.find 在元素内搜索
-  // 或者用 CSS ::highlight API (新标准)
-}
-```
-
-#### 方案B: 使用 Range + getBoundingClientRect 滚动
-
-**优点**：
-- 可以精确滚动到句子位置
-- 可以高亮选中的文本
-
-**缺点**：
-- 实现复杂
-- 需要正确计算 Range 位置
-- 可能跨多个文本节点
-
-**实现**：
-```javascript
-function scrollToMessage(index, sentence, sentenceStart, sentenceEnd) {
-  const msg = messages[index];
-  
-  if (sentence && sentenceStart !== null) {
-    // 1. 创建 Range
-    const range = createRangeFromPosition(msg.element, sentenceStart, sentenceEnd);
-    
-    if (range) {
-      // 2. 滚动到 Range 位置
-      const rect = range.getBoundingClientRect();
-      window.scrollTo({
-        top: rect.top + window.scrollY - window.innerHeight / 2,
-        behavior: 'smooth'
-      });
-      
-      // 3. 高亮文本
-      const selection = window.getSelection();
-      selection.removeAllRanges();
-      selection.addRange(range);
-      
-      return;
+  // 等滚动完成后再高亮
+  setTimeout(() => {
+    if (sentence) {
+      if (!highlightInElement(element, sentence)) {
+        flashElement(element);  // 高亮失败，闪烁整个消息
+      }
+    } else {
+      flashElement(element);
     }
-  }
-  
-  // 回退到消息级滚动
-  msg.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 400);
 }
 ```
 
-#### 方案C: 使用 anchor 元素
+### 3.4 方案优点
 
-**优点**：
-- 浏览器原生支持
-- 不需要计算位置
-
-**缺点**：
-- 需要修改页面 DOM（插入 anchor）
-- 可能影响页面结构
-
-### 4.2 推荐方案
-
-**推荐方案B**，但需要修复当前实现：
-
-1. **修复 Range 滚动**：使用 `getBoundingClientRect()` 而不是 `scrollIntoView()`
-2. **简化位置记录**：直接记录文本节点引用，而不是重新遍历
-3. **正确处理跨节点**：如果句子跨多个文本节点，创建多个 Range
+| 优点 | 说明 |
+|------|------|
+| 不依赖字符偏移量 | 跳转时实时查找，简单可靠 |
+| 正确处理滚动容器 | 向上查找 overflow: auto/scroll 的父元素 |
+| 高亮用 `<mark>` 标签 | 可视效果好，不依赖 Selection API |
+| 搜索结果数据结构简单 | 只需要 `messageIndex` + `sentence` |
+| 代码量减少 | 从 900+ 行减少到 837 行 |
 
 ---
 
-## 五、代码模块划分
+## 四、代码模块划分
 
-### 5.1 当前代码结构
+### 4.1 当前代码结构（v0.9.19）
 
 ```
-content.js (900+ 行)
+content.js (837 行)
 ├── 配置 (CONFIG, PLATFORM_CONFIGS)
 ├── 状态 (sidebarVisible, messages, sidebar, ...)
 ├── 平台检测 (detectPlatform)
@@ -341,126 +320,65 @@ content.js (900+ 行)
 ├── 消息扫描 (scanMessages, scanMessagesFallback, extractMessageInfo, sortMessagesByPosition)
 ├── 搜索 (performSearch, highlightText)
 ├── UI 更新 (updateTimelineUI)
-├── 跳转 (scrollToMessage) ← 问题在这里
+├── 跳转 (scrollToMessage, findScrollContainer, highlightInElement, clearHighlights, flashElement)
 ├── DOM 监听 (startObserving)
 └── 工具函数 (escapeHtml)
 ```
 
-### 5.2 建议重构
+---
 
-将 `scrollToMessage` 拆分为多个函数：
+## 五、CSS 样式
 
-```javascript
-// 滚动到消息（主入口）
-function scrollToMessage(index, sentence, sentenceStart, sentenceEnd) {
-  const msg = messages[index];
-  
-  if (sentence && sentenceStart !== null) {
-    // 尝试精确跳转
-    if (scrollToSentence(msg.element, sentenceStart, sentenceEnd)) {
-      return;
-    }
-  }
-  
-  // 回退到消息级滚动
-  scrollToElement(msg.element);
+### 5.1 高亮样式
+
+```css
+/* 搜索高亮 */
+.chathop-highlight {
+  background: rgba(255, 200, 0, 0.45) !important;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: background 0.5s ease;
 }
 
-// 精确跳转到句子
-function scrollToSentence(element, start, end) {
-  const range = createRangeFromPosition(element, start, end);
-  if (!range) return false;
-  
-  // 滚动到 Range 位置
-  const rect = range.getBoundingClientRect();
-  window.scrollTo({
-    top: rect.top + window.scrollY - window.innerHeight / 2,
-    behavior: 'smooth'
-  });
-  
-  // 高亮文本
-  const selection = window.getSelection();
-  selection.removeAllRanges();
-  selection.addRange(range);
-  
-  return true;
+.chathop-highlight-fade {
+  background: transparent !important;
 }
 
-// 从位置创建 Range
-function createRangeFromPosition(element, start, end) {
-  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-  let textNode;
-  let allText = '';
-  let nodePositions = [];
-  
-  while ((textNode = walker.nextNode())) {
-    nodePositions.push({
-      node: textNode,
-      start: allText.length,
-      end: allText.length + textNode.length,
-    });
-    allText += textNode.textContent;
-  }
-  
-  // 找到包含 start 的节点
-  for (const pos of nodePositions) {
-    if (pos.start <= start && pos.end > start) {
-      const range = document.createRange();
-      range.setStart(pos.node, start - pos.start);
-      
-      // 检查 end 是否在同一个节点
-      if (pos.end >= end) {
-        range.setEnd(pos.node, end - pos.start);
-      } else {
-        // 跨节点，找下一个节点
-        // ...（需要处理）
-      }
-      
-      return range;
-    }
-  }
-  
-  return null;
+/* 消息闪烁 */
+@keyframes chathop-flash-anim {
+  0%, 100% { background-color: transparent; }
+  25% { background-color: rgba(102, 126, 234, 0.15); }
+  50% { background-color: rgba(102, 126, 234, 0.25); }
+  75% { background-color: rgba(102, 126, 234, 0.15); }
 }
 
-// 滚动到元素
-function scrollToElement(element) {
-  element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  
-  // 高亮效果
-  const originalBg = element.style.backgroundColor;
-  element.style.transition = 'background-color 0.3s';
-  element.style.backgroundColor = 'rgba(102, 126, 234, 0.2)';
-  
-  setTimeout(() => {
-    element.style.backgroundColor = originalBg;
-  }, 2000);
+.chathop-flash {
+  animation: chathop-flash-anim 2s ease;
+  border-radius: 8px;
 }
 ```
 
 ---
 
-## 六、待修复的 Bug 列表
+## 六、已知问题与改进方向
 
-### P0 - 必须修复
+### 6.1 已修复（v0.9.19）
 
-| Bug | 描述 | 解决方案 |
-|-----|------|----------|
-| Range.scrollIntoView | Range 对象没有 scrollIntoView 方法 | 使用 getBoundingClientRect + window.scrollTo |
-
-### P1 - 应该修复
-
-| Bug | 描述 | 解决方案 |
-|-----|------|----------|
-| 重复遍历 | performSearch 和 scrollToMessage 都遍历文本节点 | 直接使用记录的 targetNode |
-| 跨节点句子 | 句子可能跨多个文本节点 | 正确处理 Range 跨节点情况 |
-
-### P2 - 可以优化
-
-| 问题 | 描述 | 解决方案 |
+| 问题 | 状态 | 解决方案 |
 |------|------|----------|
-| 代码过长 | content.js 900+ 行 | 拆分为多个模块 |
-| 句子位置计算复杂 | 分割后重新查找位置 | 直接记录位置不分割 |
+| `window.scrollTo()` 不起作用 | ✅ 已修复 | `findScrollContainer()` 找实际滚动容器 |
+| 字符偏移量不可靠 | ✅ 已修复 | 改用 `messageIndex` + `sentence` 实时查找 |
+| DOM 引用失效 | ✅ 已修复 | 不再存储 DOM 引用 |
+| 代码过于复杂 | ✅ 已改善 | 减少 60+ 行，简化数据结构 |
+
+### 6.2 待改进（P2）
+
+| 问题 | 说明 | 优先级 |
+|------|------|--------|
+| 消息 ID 生成不稳定 | 用 `index + timestamp` 生成，新消息插入后 ID 变化 | 低 |
+| 代码未模块化 | 837 行单文件 | 低 |
+| 缺少错误边界 | try-catch 很少 | 低 |
+| console.log 调试信息 | 生产环境应该移除 | 低 |
 
 ---
 
@@ -471,19 +389,19 @@ function scrollToElement(element) {
 ```javascript
 // 测试1: 正常模式跳转
 // - 点击时间线项
-// - 期望: 滚动到对应消息，高亮消息
+// - 期望: 滚动到对应消息，消息闪烁
 
-// 测试2: 搜索模式跳转（句子在单个文本节点）
+// 测试2: 搜索模式跳转
 // - 搜索关键词，点击搜索结果
-// - 期望: 滚动到对应句子，高亮句子
+// - 期望: 滚动到对应消息，句子被高亮（黄色背景）
 
-// 测试3: 搜索模式跳转（句子跨多个文本节点）
-// - 搜索跨多个文本节点的句子
-// - 期望: 正确滚动并高亮
+// 测试3: 高亮自动消失
+// - 点击搜索结果后
+// - 期望: 3 秒后高亮淡出
 
-// 测试4: 搜索模式跳转（句子多次出现）
-// - 搜索出现多次的句子
-// - 期望: 点击哪个就跳转到哪个，不是第一个
+// 测试4: 点击新结果清除旧高亮
+// - 点击结果 A，再点击结果 B
+// - 期望: A 的高亮消失，B 被高亮
 ```
 
 ### 7.2 搜索测试
@@ -504,53 +422,9 @@ function scrollToElement(element) {
 
 ---
 
-## 八、API 参考
+## 八、开发指南
 
-### 8.1 相关 DOM API
-
-```javascript
-// Element.scrollIntoView() - 滚动到元素
-element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-// Range.getBoundingClientRect() - 获取 Range 的位置
-const rect = range.getBoundingClientRect();
-// rect.top, rect.left, rect.width, rect.height
-
-// window.scrollTo() - 滚动窗口
-window.scrollTo({
-  top: 100,
-  behavior: 'smooth'
-});
-
-// Selection API - 选中文本
-const selection = window.getSelection();
-selection.removeAllRanges();
-selection.addRange(range);
-
-// TreeWalker - 遍历文本节点
-const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-while ((node = walker.nextNode())) {
-  // 处理文本节点
-}
-
-// Range API - 创建文本范围
-const range = document.createRange();
-range.setStart(textNode, startOffset);
-range.setEnd(textNode, endOffset);
-```
-
-### 8.2 Range 注意事项
-
-1. **Range 没有 scrollIntoView 方法** - 这是 Element 的方法
-2. **Range 可能跨多个节点** - 需要正确处理
-3. **Range offset 必须在有效范围内** - 否则抛出异常
-4. **Range 的 start/end 必须在同一文档** - 不能跨 iframe
-
----
-
-## 九、开发指南
-
-### 9.1 如何添加新平台
+### 8.1 如何添加新平台
 
 1. 在 `PLATFORM_CONFIGS` 中添加配置：
 ```javascript
@@ -569,33 +443,34 @@ newPlatform: {
 2. 测试选择器是否正确
 3. 特殊情况（如豆包的 aiIndicator）添加特殊处理
 
-### 9.2 如何调试
+### 8.2 如何调试
 
 1. 打开 Chrome DevTools
 2. 查看 Console 中的 `[ChatHop]` 日志
 3. 检查 `messages` 和 `filteredMessages` 数组
 4. 测试选择器：`document.querySelectorAll('[class*="xxx"]')`
 
-### 9.3 常见问题
+### 8.3 常见问题
 
 | 问题 | 解决方案 |
 |------|----------|
 | 找不到消息 | 检查选择器是否正确 |
-| 跳转不工作 | 检查 Range 创建是否成功 |
-| 搜索无结果 | 检查 TreeWalker 是否遍历到文本节点 |
-| 高亮不显示 | 检查 Selection API 是否正确调用 |
+| 跳转不工作 | 检查 `findScrollContainer` 是否找到容器 |
+| 搜索无结果 | 检查句子分割逻辑 |
+| 高亮不显示 | 检查 CSS 是否加载 |
 
 ---
 
-## 十、版本历史
+## 九、版本历史
 
 | 版本 | 日期 | 变更 |
 |------|------|------|
-| v0.9.9 | 2026-03-12 | 修复跳转问题（未完成） |
+| v0.9.19 | 2026-03-12 | **重写跳转逻辑**：使用滚动容器 + mark 高亮，简化搜索数据结构 |
+| v0.9.18 | 2026-03-12 | 修复 Range.scrollIntoView 错误 |
 | v0.9.8 | 2026-03-11 | 添加搜索功能 |
 | v0.9.0 | 2026-03-07 | 支持 11 个平台 |
 | v0.1.0 | 2026-03-01 | 初始版本 |
 
 ---
 
-*最后更新: 2026-03-12 | 作者: Tutu*
+*最后更新: 2026-03-12 13:40 | 作者: Tutu*
