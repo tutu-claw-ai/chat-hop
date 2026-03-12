@@ -520,9 +520,16 @@
         // 按句子分割（支持中英文标点和换行）
         const sentences = allText.split(/[。.！!？?\n；;]+/).filter(s => s.trim().length > 0);
 
+        // 跟踪消息内搜索词的出现次数
+        let matchCountInMessage = 0;
+
         sentences.forEach((sentence, sentenceIndex) => {
           const trimmed = sentence.trim();
           if (!trimmed.toLowerCase().includes(query)) return;
+
+          // 记录这是消息中第几个匹配
+          const matchIndex = matchCountInMessage;
+          matchCountInMessage++;
 
           // 构建上下文（前后各 1 句）
           const contextLines = [];
@@ -535,9 +542,10 @@
           }
 
           filteredMessages.push({
-            id: `${msg.id}-s${sentenceIndex}`,
+            id: `${msg.id}-s${sentenceIndex}-m${matchIndex}`,
             messageId: msg.id,
             messageIndex: msgIndex,
+            matchIndex: matchIndex,  // 新增：这是消息中第几个匹配
             sentence: trimmed,
             contextLines: contextLines,
             role: msg.role,
@@ -621,7 +629,7 @@
           const result = filteredMessages.find(r => r.id === resultId);
           const originalIndex = result ? result.messageIndex : messages.findIndex(m => m.id === messageId);
           if (originalIndex !== -1 && result) {
-            scrollToMessage(originalIndex, result.sentence);
+            scrollToMessage(originalIndex, result.sentence, result.matchIndex);
           }
         });
       });
@@ -696,44 +704,61 @@
     });
   }
 
-  // 在元素内高亮指定句子
-  function highlightInElement(element, sentence) {
+  // 在元素内高亮指定句子（支持多匹配）
+  function highlightInElement(element, sentence, matchIndex = 0) {
     clearHighlights();
     if (!sentence) return false;
 
     const lowerSentence = sentence.toLowerCase();
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
     let node;
+    let currentMatchIndex = 0;
 
-    // 尝试在单个文本节点内找到完整匹配
+    // 遍历所有文本节点，找到第 matchIndex 个匹配
     while ((node = walker.nextNode())) {
-      const idx = node.textContent.toLowerCase().indexOf(lowerSentence);
-      if (idx === -1) continue;
+      let searchStart = 0;
+      const nodeText = node.textContent;
+      const nodeTextLower = nodeText.toLowerCase();
 
-      try {
-        const range = document.createRange();
-        range.setStart(node, idx);
-        range.setEnd(node, idx + sentence.length);
+      // 在当前节点内查找所有匹配
+      while (searchStart < nodeText.length) {
+        const idx = nodeTextLower.indexOf(lowerSentence, searchStart);
+        if (idx === -1) break;
 
-        const mark = document.createElement('mark');
-        mark.className = 'chathop-highlight';
-        range.surroundContents(mark);
+        // 检查是否是我们要的那个匹配
+        if (currentMatchIndex === matchIndex) {
+          try {
+            const range = document.createRange();
+            range.setStart(node, idx);
+            range.setEnd(node, idx + sentence.length);
 
-        // 3 秒后淡出
-        setTimeout(() => {
-          mark.classList.add('chathop-highlight-fade');
-          setTimeout(() => {
-            if (mark.parentNode) {
-              const parent = mark.parentNode;
-              mark.replaceWith(document.createTextNode(mark.textContent));
-              parent.normalize();
-            }
-          }, 500);
-        }, 3000);
+            const mark = document.createElement('mark');
+            mark.className = 'chathop-highlight';
+            range.surroundContents(mark);
 
-        return true;
-      } catch (e) {
-        // surroundContents 可能在跨节点时失败，忽略
+            // 滚动到高亮元素
+            mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // 3 秒后淡出
+            setTimeout(() => {
+              mark.classList.add('chathop-highlight-fade');
+              setTimeout(() => {
+                if (mark.parentNode) {
+                  const parent = mark.parentNode;
+                  mark.replaceWith(document.createTextNode(mark.textContent));
+                  parent.normalize();
+                }
+              }, 500);
+            }, 3000);
+
+            return true;
+          } catch (e) {
+            // surroundContents 可能在跨节点时失败，继续尝试下一个
+          }
+        }
+
+        currentMatchIndex++;
+        searchStart = idx + 1;
       }
     }
 
@@ -746,19 +771,47 @@
     setTimeout(() => element.classList.remove('chathop-flash'), 2000);
   }
 
-  function scrollToMessage(index, sentence) {
+  // 找到包含文本的最小块级元素
+  function findSmallestBlockContaining(rootElement, text) {
+    if (!text) return null;
+    const lowerText = text.toLowerCase();
+
+    // 查找所有块级元素
+    const blocks = rootElement.querySelectorAll('p, li, div, section, article, pre, blockquote, h1, h2, h3, h4, h5, h6');
+    let smallest = null;
+    let smallestLength = Infinity;
+
+    blocks.forEach(block => {
+      // 跳过包含其他块的元素（只保留叶子块）
+      const childBlocks = block.querySelectorAll('p, li, div, section, article, pre, blockquote');
+      if (childBlocks.length > 0) return;
+
+      const content = block.textContent || '';
+      if (content.toLowerCase().includes(lowerText) && content.length < smallestLength) {
+        smallest = block;
+        smallestLength = content.length;
+      }
+    });
+
+    return smallest;
+  }
+
+  function scrollToMessage(index, sentence, matchIndex = 0) {
     const msg = messages[index];
     if (!msg || !msg.element) return;
 
     clearHighlights();
 
-    const element = msg.element;
-    const scrollContainer = findScrollContainer(element);
+    // 找到包含句子的最小块级元素
+    const targetElement = sentence ? findSmallestBlockContaining(msg.element, sentence) : null;
+    const scrollTarget = targetElement || msg.element;
+
+    const scrollContainer = findScrollContainer(scrollTarget);
 
     if (scrollContainer) {
       // 用滚动容器做精确滚动
       const containerRect = scrollContainer.getBoundingClientRect();
-      const msgRect = element.getBoundingClientRect();
+      const msgRect = scrollTarget.getBoundingClientRect();
       const offset = msgRect.top - containerRect.top;
       scrollContainer.scrollTo({
         top: scrollContainer.scrollTop + offset - 80,
@@ -766,18 +819,19 @@
       });
     } else {
       // 回退：scrollIntoView
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     // 等滚动动画完成后再高亮
     setTimeout(() => {
       if (sentence) {
-        if (!highlightInElement(element, sentence)) {
-          // 高亮失败，闪烁整个消息
-          flashElement(element);
+        // 优先在目标块级元素内高亮（带 matchIndex），失败则在整个消息内高亮
+        if (!highlightInElement(scrollTarget, sentence, matchIndex) && scrollTarget !== msg.element) {
+          highlightInElement(msg.element, sentence, matchIndex);
         }
+        // 如果都失败了，不需要额外处理，highlightInElement 返回 false 时自然没有任何效果
       } else {
-        flashElement(element);
+        flashElement(scrollTarget);
       }
     }, 400);
 
