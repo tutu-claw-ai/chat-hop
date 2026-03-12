@@ -378,25 +378,29 @@
     }
     
     let prevHeight = scrollContainer.scrollHeight;
-    let attempts = 0;
-    const maxAttempts = 30; // 最多尝试 30 次
+    let noChangeCount = 0;
+    const maxNoChange = 3; // 连续 3 次没变化就停止
     let loadedCount = 0;
     
-    while (attempts < maxAttempts) {
+    while (noChangeCount < maxNoChange) {
       // 滚动到顶部
       scrollContainer.scrollTo({ top: 0, behavior: 'instant' });
       
       // 等待加载
-      await new Promise(r => setTimeout(r, 800));
+      await new Promise(r => setTimeout(r, 1000));
       
       // 检查是否有新内容
-      if (scrollContainer.scrollHeight > prevHeight) {
+      if (scrollContainer.scrollHeight > prevHeight + 10) {
+        // 高度增加超过 10px，算作有效加载
         loadedCount++;
         prevHeight = scrollContainer.scrollHeight;
         btnText.textContent = `加载中 ${loadedCount}...`;
-        attempts = 0; // 有新内容，重置计数
+        noChangeCount = 0; // 有新内容，重置计数
+        console.log(`[ChatHop] 第 ${loadedCount} 轮加载完成，高度: ${prevHeight}`);
       } else {
-        attempts++;
+        // 高度没变化或变化很小
+        noChangeCount++;
+        console.log(`[ChatHop] 无新内容 (${noChangeCount}/${maxNoChange})`);
       }
     }
     
@@ -406,7 +410,7 @@
     scanMessages();
     
     // 恢复按钮状态
-    btnText.textContent = '✓ 已加载';
+    btnText.textContent = loadedCount > 0 ? `✓ 已加载 ${loadedCount} 轮` : '✓ 已是全部';
     btn.classList.remove('loading');
     btn.classList.add('loaded');
     
