@@ -677,3 +677,28 @@
     padding: 12px;
   }
 }
+
+/* ChatHop 搜索高亮 */
+.chathop-highlight {
+  background: rgba(255, 200, 0, 0.45) !important;
+  border-radius: 2px;
+  padding: 1px 0;
+  transition: background 0.5s ease;
+}
+
+.chathop-highlight-fade {
+  background: transparent !important;
+}
+
+/* ChatHop 消息闪烁 */
+@keyframes chathop-flash-anim {
+  0%, 100% { background-color: transparent; }
+  25% { background-color: rgba(102, 126, 234, 0.15); }
+  50% { background-color: rgba(102, 126, 234, 0.25); }
+  75% { background-color: rgba(102, 126, 234, 0.15); }
+}
+
+.chathop-flash {
+  animation: chathop-flash-anim 2s ease;
+  border-radius: 8px;
+}

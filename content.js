@@ -505,117 +505,43 @@
     };
   }
 
-  // 执行搜索（按句子搜索，记录精确位置）
+  // 执行搜索（按句子搜索）
   function performSearch() {
     if (!searchQuery) {
-      // 清空搜索，显示所有消息
       filteredMessages = [];
     } else {
-      // 按句子搜索
       const query = searchQuery.toLowerCase();
       filteredMessages = [];
 
-      messages.forEach(msg => {
-        // 在消息元素内查找所有文本节点，记录每个句子的精确位置
-        const walker = document.createTreeWalker(
-          msg.element,
-          NodeFilter.SHOW_TEXT,
-          null,
-          false
-        );
+      messages.forEach((msg, msgIndex) => {
+        // 获取消息的纯文本
+        const allText = msg.element.textContent || '';
 
-        let textNode;
-        let allText = '';
-        let nodePositions = []; // 记录每个文本节点在 allText 中的位置
+        // 按句子分割（支持中英文标点和换行）
+        const sentences = allText.split(/[。.！!？?\n；;]+/).filter(s => s.trim().length > 0);
 
-        while ((textNode = walker.nextNode())) {
-          const text = textNode.textContent;
-          nodePositions.push({
-            node: textNode,
-            start: allText.length,
-            end: allText.length + text.length,
-          });
-          allText += text;
-        }
-
-        // 按句子分割（支持多种分隔符）
-        const sentences = allText.split(/[。\n！？；;!?]+/).filter(s => s.trim());
-
-        // 记录每个句子在 allText 中的位置
-        let currentPos = 0;
         sentences.forEach((sentence, sentenceIndex) => {
-          // 找到句子在 allText 中的位置
-          const sentenceLower = sentence.toLowerCase();
-          const allTextLower = allText.toLowerCase();
+          const trimmed = sentence.trim();
+          if (!trimmed.toLowerCase().includes(query)) return;
 
-          // 从 currentPos 开始搜索，确保按顺序找到
-          let searchStart = currentPos;
-          let matchIndex = -1;
-
-          while ((matchIndex = allTextLower.indexOf(sentenceLower, searchStart)) !== -1) {
-            // 检查这个位置是否是句子的开始（前面是分隔符或开头）
-            if (matchIndex === 0 || /[。\n！？；;!?]/.test(allText[matchIndex - 1])) {
-              break;
-            }
-            searchStart = matchIndex + 1;
+          // 构建上下文（前后各 1 句）
+          const contextLines = [];
+          if (sentenceIndex > 0) {
+            contextLines.push({ text: sentences[sentenceIndex - 1].trim(), isMatch: false });
+          }
+          contextLines.push({ text: trimmed, isMatch: true });
+          if (sentenceIndex < sentences.length - 1) {
+            contextLines.push({ text: sentences[sentenceIndex + 1].trim(), isMatch: false });
           }
 
-          if (matchIndex === -1) {
-            // 没找到，用原来的方法
-            matchIndex = allText.indexOf(sentence, currentPos);
-          }
-
-          if (matchIndex !== -1) {
-            currentPos = matchIndex + sentence.length;
-          }
-
-          if (sentence.toLowerCase().includes(query)) {
-            // 获取上下文（只显示前后各 1 行）
-            const contextLines = [];
-
-            // 前面的句子（只显示 1 行）
-            if (sentenceIndex > 0) {
-              contextLines.push({ text: sentences[sentenceIndex - 1], isMatch: false });
-            }
-
-            // 当前匹配的句子
-            contextLines.push({ text: sentence, isMatch: true });
-
-            // 后面的句子（只显示 1 行）
-            if (sentenceIndex < sentences.length - 1) {
-              contextLines.push({ text: sentences[sentenceIndex + 1], isMatch: false });
-            }
-
-            // 找到包含这个句子的文本节点
-            let targetNode = null;
-            let targetOffset = 0;
-            const sentenceEnd = matchIndex + sentence.length;
-
-            for (const nodePos of nodePositions) {
-              if (nodePos.start <= matchIndex && nodePos.end > matchIndex) {
-                targetNode = nodePos.node;
-                targetOffset = matchIndex - nodePos.start;
-                break;
-              }
-            }
-
-            filteredMessages.push({
-              id: `${msg.id}-sentence-${sentenceIndex}-${matchIndex}`,
-              messageId: msg.id,
-              sentence: sentence,
-              sentenceStart: matchIndex, // 句子在消息文本中的起始位置
-              sentenceEnd: sentenceEnd,  // 句子在消息文本中的结束位置
-              targetNode: targetNode,    // 包含句子的文本节点
-              targetOffset: targetOffset, // 句子在文本节点中的偏移量
-              contextLines: contextLines,
-              role: msg.role,
-              element: msg.element,
-              fullContent: msg.fullContent,
-            });
-          } else {
-            // 没找到位置，跳过
-            currentPos += sentence.length + 1; // +1 for separator
-          }
+          filteredMessages.push({
+            id: `${msg.id}-s${sentenceIndex}`,
+            messageId: msg.id,
+            messageIndex: msgIndex,
+            sentence: trimmed,
+            contextLines: contextLines,
+            role: msg.role,
+          });
         });
       });
     }
@@ -693,14 +619,9 @@
           const messageId = item.dataset.messageId;
           const resultId = item.dataset.id;
           const result = filteredMessages.find(r => r.id === resultId);
-          const originalIndex = messages.findIndex(m => m.id === messageId);
+          const originalIndex = result ? result.messageIndex : messages.findIndex(m => m.id === messageId);
           if (originalIndex !== -1 && result) {
-            scrollToMessage(
-              originalIndex,
-              result.sentence,
-              result.sentenceStart,
-              result.sentenceEnd
-            );
+            scrollToMessage(originalIndex, result.sentence);
           }
         });
       });
@@ -752,95 +673,113 @@
   }
 
   // 滚动到消息（支持精确跳转到句子)
-  function scrollToMessage(index, sentence = null, sentenceStart = null, sentenceEnd = null) {
+  // 找到实际的滚动容器（AI 聊天页面通常用内部 div 滚动，不是 window）
+  function findScrollContainer(element) {
+    let parent = element.parentElement;
+    while (parent && parent !== document.body && parent !== document.documentElement) {
+      const style = window.getComputedStyle(parent);
+      const overflowY = style.overflowY;
+      if ((overflowY === 'auto' || overflowY === 'scroll') && parent.scrollHeight > parent.clientHeight) {
+        return parent;
+      }
+      parent = parent.parentElement;
+    }
+    return null;
+  }
+
+  // 清除所有高亮
+  function clearHighlights() {
+    document.querySelectorAll('.chathop-highlight').forEach(mark => {
+      const parent = mark.parentNode;
+      mark.replaceWith(document.createTextNode(mark.textContent));
+      if (parent) parent.normalize(); // 合并相邻文本节点
+    });
+  }
+
+  // 在元素内高亮指定句子
+  function highlightInElement(element, sentence) {
+    clearHighlights();
+    if (!sentence) return false;
+
+    const lowerSentence = sentence.toLowerCase();
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+
+    // 尝试在单个文本节点内找到完整匹配
+    while ((node = walker.nextNode())) {
+      const idx = node.textContent.toLowerCase().indexOf(lowerSentence);
+      if (idx === -1) continue;
+
+      try {
+        const range = document.createRange();
+        range.setStart(node, idx);
+        range.setEnd(node, idx + sentence.length);
+
+        const mark = document.createElement('mark');
+        mark.className = 'chathop-highlight';
+        range.surroundContents(mark);
+
+        // 3 秒后淡出
+        setTimeout(() => {
+          mark.classList.add('chathop-highlight-fade');
+          setTimeout(() => {
+            if (mark.parentNode) {
+              const parent = mark.parentNode;
+              mark.replaceWith(document.createTextNode(mark.textContent));
+              parent.normalize();
+            }
+          }, 500);
+        }, 3000);
+
+        return true;
+      } catch (e) {
+        // surroundContents 可能在跨节点时失败，忽略
+      }
+    }
+
+    return false;
+  }
+
+  // 闪烁整个消息元素
+  function flashElement(element) {
+    element.classList.add('chathop-flash');
+    setTimeout(() => element.classList.remove('chathop-flash'), 2000);
+  }
+
+  function scrollToMessage(index, sentence) {
     const msg = messages[index];
     if (!msg || !msg.element) return;
 
-    // 清空之前的搜索高亮
-    if (window.getSelection) {
-      window.getSelection().removeAllRanges();
+    clearHighlights();
+
+    const element = msg.element;
+    const scrollContainer = findScrollContainer(element);
+
+    if (scrollContainer) {
+      // 用滚动容器做精确滚动
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const msgRect = element.getBoundingClientRect();
+      const offset = msgRect.top - containerRect.top;
+      scrollContainer.scrollTo({
+        top: scrollContainer.scrollTop + offset - 80,
+        behavior: 'smooth'
+      });
+    } else {
+      // 回退：scrollIntoView
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    // 如果提供了句子和精确位置，直接使用记录的位置跳转
-    if (sentence && sentenceStart !== null && sentenceEnd !== null) {
-      // 在消息元素内查找所有文本节点
-      const walker = document.createTreeWalker(
-        msg.element,
-        NodeFilter.SHOW_TEXT,
-        null,
-        false
-      );
-
-      let textNode;
-      let allText = '';
-      let nodePositions = [];
-
-      while ((textNode = walker.nextNode())) {
-        const text = textNode.textContent;
-        nodePositions.push({
-          node: textNode,
-          start: allText.length,
-          end: allText.length + text.length,
-        });
-        allText += text;
-      }
-
-      // 找到包含句子起始位置的文本节点
-      let range = null;
-      for (const nodePos of nodePositions) {
-        if (nodePos.start <= sentenceStart && nodePos.end > sentenceStart) {
-          // 找到了起始节点
-          try {
-            const startOffset = sentenceStart - nodePos.start;
-            const endOffset = Math.min(sentenceEnd - nodePos.start, nodePos.node.length);
-
-            range = document.createRange();
-            range.setStart(nodePos.node, startOffset);
-            range.setEnd(nodePos.node, endOffset);
-
-            // 高亮选中的文本（必须先添加到 Selection，getBoundingClientRect 才能正确工作）
-            const selection = window.getSelection();
-            if (selection) {
-              selection.removeAllRanges();
-              selection.addRange(range);
-            }
-
-            // 使用 getBoundingClientRect 滚动到 Range 位置
-            const rect = range.getBoundingClientRect();
-            const scrollTop = rect.top + window.scrollY - window.innerHeight / 2;
-            window.scrollTo({
-              top: Math.max(0, scrollTop),
-              behavior: 'smooth'
-            });
-
-            console.log(`[ChatHop] 精确定位到句子(位置 ${sentenceStart}): ${sentence.substring(0, 30)}...`);
-            return;
-          } catch (e) {
-            console.log('[ChatHop] 创建 Range 失败:', e);
-          }
-          break;
-        }
-      }
-
-      console.log(`[ChatHop] 精确匹配失败，回退到消息级滚动`);
-    }
-
-    // 回退到滚动到整个消息
-    const originalBg = msg.element.style.backgroundColor;
-    const originalTransition = msg.element.style.transition;
-    msg.element.style.transition = 'background-color 0.3s';
-    msg.element.style.backgroundColor = 'rgba(102, 126, 234, 0.2)';
-
-    // 滚动到元素顶端
-    msg.element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    // 移除高亮
+    // 等滚动动画完成后再高亮
     setTimeout(() => {
-      msg.element.style.backgroundColor = originalBg;
-      setTimeout(() => {
-        msg.element.style.transition = originalTransition;
-      }, 300);
-    }, 2000);
+      if (sentence) {
+        if (!highlightInElement(element, sentence)) {
+          // 高亮失败，闪烁整个消息
+          flashElement(element);
+        }
+      } else {
+        flashElement(element);
+      }
+    }, 400);
 
     // 高亮时间线项
     sidebar.querySelectorAll('.ai-timeline-item').forEach((item, i) => {
