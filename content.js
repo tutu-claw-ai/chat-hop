@@ -754,7 +754,7 @@
             // 滚动到高亮元素
             mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-            // 3 秒后淡出
+            // 5 秒后淡出
             setTimeout(() => {
               mark.classList.add('chathop-highlight-fade');
               setTimeout(() => {
@@ -763,8 +763,8 @@
                   mark.replaceWith(document.createTextNode(mark.textContent));
                   parent.normalize();
                 }
-              }, 500);
-            }, 3000);
+              }, 1000);
+            }, 5000);
 
             return true;
           } catch (e) {
@@ -831,9 +831,16 @@
 
     clearHighlights();
 
-    // 找到包含句子的最小块级元素（用 searchKeyword 或 sentence 来查找）
-    const searchText = searchKeyword || sentence;
-    const targetElement = searchText ? findSmallestBlockContaining(msg.element, searchText) : null;
+    // 找到包含句子的最小块级元素
+    // 优先用 sentence 的前 30 字符（更精确），找不到时用 searchKeyword
+    const sentencePrefix = sentence ? sentence.substring(0, 30) : null;
+    let targetElement = sentencePrefix ? findSmallestBlockContaining(msg.element, sentencePrefix) : null;
+    
+    // 如果用 sentence 找不到，尝试用 searchKeyword
+    if (!targetElement && searchKeyword) {
+      targetElement = findSmallestBlockContaining(msg.element, searchKeyword);
+    }
+    
     const scrollTarget = targetElement || msg.element;
 
     console.log('[ChatHop] 目标元素:', {
