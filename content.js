@@ -709,10 +709,19 @@
     clearHighlights();
     if (!sentence) return false;
 
+    console.log('[ChatHop] highlightInElement 开始:', {
+      sentence: sentence.substring(0, 50) + '...',
+      matchIndex,
+      elementTag: element.tagName,
+      elementClass: element.className,
+      elementText: (element.textContent || '').substring(0, 100) + '...'
+    });
+
     const lowerSentence = sentence.toLowerCase();
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null, false);
     let node;
     let currentMatchIndex = 0;
+    let totalMatches = 0;
 
     // 遍历所有文本节点，找到第 matchIndex 个匹配
     while ((node = walker.nextNode())) {
@@ -725,6 +734,9 @@
         const idx = nodeTextLower.indexOf(lowerSentence, searchStart);
         if (idx === -1) break;
 
+        totalMatches++;
+        console.log(`[ChatHop] 找到第 ${totalMatches} 个匹配 (目标: ${matchIndex})`);
+
         // 检查是否是我们要的那个匹配
         if (currentMatchIndex === matchIndex) {
           try {
@@ -735,6 +747,8 @@
             const mark = document.createElement('mark');
             mark.className = 'chathop-highlight';
             range.surroundContents(mark);
+
+            console.log('[ChatHop] ✅ 高亮成功! mark 元素:', mark);
 
             // 滚动到高亮元素
             mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -753,6 +767,7 @@
 
             return true;
           } catch (e) {
+            console.log('[ChatHop] ❌ surroundContents 失败:', e.message);
             // surroundContents 可能在跨节点时失败，继续尝试下一个
           }
         }
@@ -762,6 +777,7 @@
       }
     }
 
+    console.log(`[ChatHop] ❌ 未找到匹配 (总共找到 ${totalMatches} 个，需要第 ${matchIndex} 个)`);
     return false;
   }
 
@@ -798,13 +814,31 @@
 
   function scrollToMessage(index, sentence, matchIndex = 0) {
     const msg = messages[index];
-    if (!msg || !msg.element) return;
+    if (!msg || !msg.element) {
+      console.log('[ChatHop] ❌ scrollToMessage: 消息不存在', { index });
+      return;
+    }
+
+    console.log('[ChatHop] scrollToMessage 开始:', {
+      index,
+      sentence: sentence ? sentence.substring(0, 50) + '...' : '(null)',
+      matchIndex,
+      msgElementTag: msg.element.tagName,
+      msgElementClass: msg.element.className
+    });
 
     clearHighlights();
 
     // 找到包含句子的最小块级元素
     const targetElement = sentence ? findSmallestBlockContaining(msg.element, sentence) : null;
     const scrollTarget = targetElement || msg.element;
+
+    console.log('[ChatHop] 目标元素:', {
+      找到最小块: !!targetElement,
+      targetTag: scrollTarget.tagName,
+      targetClass: scrollTarget.className,
+      targetText: (scrollTarget.textContent || '').substring(0, 100) + '...'
+    });
 
     const scrollContainer = findScrollContainer(scrollTarget);
 
