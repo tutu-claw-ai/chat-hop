@@ -9,7 +9,7 @@
     sidebarWidth: 280,
     animationDuration: 300,
     maxSummaryLength: 60,
-    observeDebounce: 1500, // 增加防抖时间，减少 AI 输出时的频繁刷新
+    observeDebounce: 800, // 适中的防抖时间，平衡刷新频率和性能
     searchContextLines: 1, // 搜索结果显示的上下文行数（前后各 1 行）
   };
 
@@ -168,15 +168,15 @@
   // 初始化
   function init() {
     currentPlatform = detectPlatform();
-    
+
     if (!currentPlatform) {
       console.log('[ChatHop] 不支持当前平台');
       return;
     }
-    
+
     console.log('[ChatHop] 检测到平台: ${currentPlatform.name}');
     console.log('[ChatHop] 初始化扩展...');
-    
+
     // 等待页面加载完成
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', setup);
@@ -190,10 +190,10 @@
     createToggleButton();
     createSidebar();
     startObserving();
-    
+
     // 初始扫描消息
     setTimeout(scanMessages, 1500);
-    
+
     console.log('[ChatHop] 扩展已加载');
   }
 
@@ -203,7 +203,7 @@
       toggleButton = document.getElementById('ai-timeline-toggle');
       return;
     }
-    
+
     toggleButton = document.createElement('div');
     toggleButton.id = 'ai-timeline-toggle';
     toggleButton.innerHTML = `
@@ -351,17 +351,17 @@
   // 加载全部消息
   async function loadAllMessages() {
     const btn = sidebar.querySelector('.ai-timeline-load-all');
-    
+
     // 更新按钮状态
     btn.disabled = true;
     btn.classList.add('loading');
-    
+
     console.log('[ChatHop] 开始加载全部消息...');
-    
+
     // 找到滚动容器
     const firstMsg = messages[0];
     const scrollContainer = firstMsg ? findScrollContainer(firstMsg.element) : null;
-    
+
     if (!scrollContainer) {
       console.log('[ChatHop] ❌ 未找到滚动容器');
       btn.classList.add('error');
@@ -371,19 +371,19 @@
       }, 2000);
       return;
     }
-    
+
     let prevHeight = scrollContainer.scrollHeight;
     let noChangeCount = 0;
     const maxNoChange = 2; // 连续 2 次没变化就停止（原为 3）
     let loadedCount = 0;
-    
+
     while (noChangeCount < maxNoChange) {
       // 滚动到顶部
       scrollContainer.scrollTo({ top: 0, behavior: 'instant' });
-      
+
       // 等待加载
       await new Promise(r => setTimeout(r, 1000));
-      
+
       // 检查是否有新内容
       if (scrollContainer.scrollHeight > prevHeight + 10) {
         // 高度增加超过 10px，算作有效加载
@@ -397,16 +397,16 @@
         console.log(`[ChatHop] 无新内容 (${noChangeCount}/${maxNoChange})`);
       }
     }
-    
+
     console.log(`[ChatHop] 加载完成，共 ${loadedCount} 轮`);
-    
+
     // 重新扫描
     scanMessages();
-    
+
     // 恢复按钮状态
     btn.classList.remove('loading');
     btn.classList.add('loaded');
-    
+
     setTimeout(() => {
       btn.disabled = false;
       btn.classList.remove('loaded');
@@ -416,23 +416,23 @@
   // 扫描消息
   function scanMessages() {
     console.log(`[ChatHop] 扫描 ${currentPlatform.name} 消息...`);
-    
+
     const selectors = currentPlatform.selectors;
-    
+
     // 查找消息容器
     const container = document.querySelector(selectors.container);
-    
+
     if (!container) {
       console.log('[ChatHop] 未找到消息容器，尝试备用方法');
       // 备用：直接在整个页面查找
       scanMessagesFallback();
       return;
     }
-    
+
     // 查找用户消息和 AI 消息
     let userMessages = Array.from(container.querySelectorAll(selectors.userMessage));
     let aiMessages = [];
-    
+
     // Claude 特殊处理：AI 消息需要找容器
     if (currentPlatform.key === 'claude' && selectors.aiContainerPattern) {
       const aiContainers = new Set();
@@ -444,12 +444,12 @@
     } else {
       aiMessages = Array.from(container.querySelectorAll(selectors.aiMessage));
     }
-    
+
     console.log(`[ChatHop] 找到 ${userMessages.length} 个用户消息, ${aiMessages.length} 个 AI 消息`);
-    
+
     // 收集新消息
     const newMessages = [];
-    
+
     // 处理用户消息
     userMessages.forEach((el, index) => {
       const msg = extractMessageInfo(el, 'user', index);
@@ -457,7 +457,7 @@
         newMessages.push(msg);
       }
     });
-    
+
     // 处理 AI 消息
     aiMessages.forEach((el, index) => {
       const msg = extractMessageInfo(el, 'assistant', index);
@@ -465,7 +465,7 @@
         newMessages.push(msg);
       }
     });
-    
+
     // 按 DOM 位置排序
     newMessages.sort((a, b) => {
       try {
@@ -475,39 +475,23 @@
         return 0;
       }
     });
-    
+
     newMessages.forEach((msg, index) => {
       msg.index = index;
     });
-    
+
     // 智能更新：检测消息数量变化
     const countChanged = newMessages.length !== lastMessageCount;
     lastMessageCount = newMessages.length;
-    
-    if (!countChanged && messages.length > 0 && newMessages.length > 0) {
-      // 消息数量没变化，只更新最后一条消息的内容（AI 正在输出）
-      const lastOld = messages[messages.length - 1];
-      const lastNew = newMessages[newMessages.length - 1];
-      
-      if (lastOld && lastNew && lastOld.role === lastNew.role) {
-        // 更新最后一条消息的内容，不重新渲染整个列表
-        lastOld.content = lastNew.content;
-        lastOld.fullContent = lastNew.fullContent;
-        
-        // 只更新 UI 中的最后一条消息
-        updateLastMessageUI(lastOld);
-        
-        // 保存新消息引用
-        messages = newMessages;
-        return; // 不重新渲染整个列表
-      }
-    }
-    
-    // 消息数量变化了，完全重新渲染
+
+    // 暂时禁用智能更新，确保新消息能显示
+    // TODO: 优化智能更新逻辑，避免 AI 输出时闪烁
+
+    // 完全重新渲染
     messages = newMessages;
-    console.log(`[ChatHop] 共找到 ${messages.length} 条消息`);
+    console.log(`[ChatHop] 共找到 ${messages.length} 条消息（数量变化: ${countChanged}）`);
     updateTimelineUI();
-    
+
     // 如果有搜索关键词,自动重新搜索
     if (searchQuery) {
       console.log(`[ChatHop] 检测到新消息，自动重新搜索: ${searchQuery}`);
@@ -518,10 +502,10 @@
   // 备用扫描方法
   function scanMessagesFallback() {
     const selectors = currentPlatform.selectors;
-    
+
     let userMessages = Array.from(document.querySelectorAll(selectors.userMessage));
     let aiMessages = [];
-    
+
     // Claude 特殊处理
     if (currentPlatform.key === 'claude' && selectors.aiContainerPattern) {
       const aiContainers = new Set();
@@ -533,20 +517,20 @@
     } else {
       aiMessages = Array.from(document.querySelectorAll(selectors.aiMessage));
     }
-    
+
     // 收集新消息
     const newMessages = [];
-    
+
     userMessages.forEach((el, index) => {
       const msg = extractMessageInfo(el, 'user', index);
       if (msg) newMessages.push(msg);
     });
-    
+
     aiMessages.forEach((el, index) => {
       const msg = extractMessageInfo(el, 'assistant', index);
       if (msg) newMessages.push(msg);
     });
-    
+
     // 排序
     newMessages.sort((a, b) => {
       try {
@@ -556,20 +540,23 @@
         return 0;
       }
     });
-    
+
     newMessages.forEach((msg, index) => {
       msg.index = index;
     });
-    
-    // 检测消息数量变化
+
+    // 检测消息数量变化（先保存旧计数，然后比较）
+    const oldCount = lastMessageCount;
     const countChanged = newMessages.length !== lastMessageCount;
+
+    // 更新计数（为下次比较做准备）
     lastMessageCount = newMessages.length;
-    
+
     if (!countChanged && messages.length > 0 && newMessages.length > 0) {
       // 消息数量没变化，只更新最后一条消息
       const lastOld = messages[messages.length - 1];
       const lastNew = newMessages[newMessages.length - 1];
-      
+
       if (lastOld && lastNew && lastOld.role === lastNew.role) {
         lastOld.content = lastNew.content;
         lastOld.fullContent = lastNew.fullContent;
@@ -578,12 +565,14 @@
         return;
       }
     }
-    
-    // 完全重新渲染
+
+    // 消息数量变化了，完全重新渲染
+    const oldCount = messages.length;
     messages = newMessages;
-    console.log(`[ChatHop] 备用扫描: ${messages.length} 条消息`);
+    lastMessageCount = newMessages.length; // 同步更新计数！
+    console.log(`[ChatHop] 备用扫描: ${messages.length} 条消息（数量变化: ${oldCount} → ${messages.length}）`);
     updateTimelineUI();
-    
+
     if (searchQuery) {
       console.log(`[ChatHop] 检测到新消息（备用扫描），自动重新搜索: ${searchQuery}`);
       performSearch();
@@ -593,27 +582,27 @@
   // 提取消息信息
   function extractMessageInfo(element, role, index) {
     const selectors = currentPlatform.selectors;
-    
+
     // 获取文本内容
     const bubbleEl = element.querySelector(selectors.bubble) || element;
     let text = '';
-    
+
     if (bubbleEl) {
       text = bubbleEl.textContent?.trim() || '';
     }
-    
+
     if (!text || text.length < 2) {
       text = element.textContent?.trim() || '';
     }
-    
+
     if (!text || text.length < 2) return null;
-    
+
     // 豆包特殊处理：通过 aiIndicator 判断是否为 AI 消息
     if (currentPlatform.key === 'doubao' && selectors.aiIndicator) {
       const hasAiContent = element.querySelector(selectors.aiIndicator);
       role = hasAiContent ? 'assistant' : 'user';
     }
-    
+
     // 提取摘要
     const summary = text.substring(0, CONFIG.maxSummaryLength) + (text.length > CONFIG.maxSummaryLength ? '...' : '');
 
@@ -631,7 +620,7 @@
       index: 0,
     };
   }
-  
+
   // 简单 hash 函数
   function simpleHash(str) {
     let hash = 0;
@@ -646,18 +635,18 @@
   // 只更新最后一条消息的内容（避免 AI 输出时闪烁）
   function updateLastMessageUI(msg) {
     if (!sidebar) return;
-    
+
     // 搜索模式下需要完全重新渲染
     if (searchQuery) {
       performSearch();
       return;
     }
-    
+
     const content = sidebar.querySelector('.ai-timeline-content');
     const items = content.querySelectorAll('.ai-timeline-item');
-    
+
     if (items.length === 0) return;
-    
+
     // 找到对应的消息项（通过 data-id 属性匹配）
     let targetItem = null;
     items.forEach(item => {
@@ -665,12 +654,12 @@
         targetItem = item;
       }
     });
-    
+
     // 如果没找到匹配的，就更新最后一个
     if (!targetItem) {
       targetItem = items[items.length - 1];
     }
-    
+
     const contentEl = targetItem.querySelector('.ai-timeline-item-content');
     if (contentEl) {
       contentEl.textContent = msg.content;
@@ -1007,12 +996,12 @@
     // 优先用 sentence 的前 30 字符（更精确），找不到时用 searchKeyword
     const sentencePrefix = sentence ? sentence.substring(0, 30) : null;
     let targetElement = sentencePrefix ? findSmallestBlockContaining(msg.element, sentencePrefix) : null;
-    
+
     // 如果用 sentence 找不到，尝试用 searchKeyword
     if (!targetElement && searchKeyword) {
       targetElement = findSmallestBlockContaining(msg.element, searchKeyword);
     }
-    
+
     const scrollTarget = targetElement || msg.element;
 
     console.log('[ChatHop] 目标元素:', {
@@ -1068,7 +1057,7 @@
     if (observer) {
       observer.disconnect();
     }
-    
+
     let debounceTimer;
     observer = new MutationObserver((mutations) => {
       const hasRelevantChange = mutations.some(mutation => {
@@ -1083,7 +1072,7 @@
           className.includes('agent')
         );
       });
-      
+
       if (hasRelevantChange || mutations.length > 5) {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(() => {
@@ -1093,7 +1082,7 @@
         }, CONFIG.observeDebounce);
       }
     });
-    
+
     observer.observe(document.body, {
       childList: true,
       subtree: true,
