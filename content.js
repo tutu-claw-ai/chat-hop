@@ -567,9 +567,8 @@
     }
 
     // 消息数量变化了，完全重新渲染
-    const oldCount = messages.length;
+    const prevMsgCount = messages.length;
     messages = newMessages;
-    lastMessageCount = newMessages.length; // 同步更新计数！
     console.log(`[ChatHop] 备用扫描: ${messages.length} 条消息（数量变化: ${oldCount} → ${messages.length}）`);
     updateTimelineUI();
 
